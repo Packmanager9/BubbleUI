@@ -369,6 +369,9 @@
             main()
         }, 1)
         document.addEventListener('keydown', (event) => {
+            // if(event.key  == ' '){
+                event.preventDefault()
+            // }
             keysPressed[event.key] = true; //adds key to list of pressed
         });
         document.addEventListener('keyup', (event) => {
@@ -383,6 +386,37 @@
             TIP_engine.body = TIP_engine
 
             room.check(TIP_engine)
+            let l = new LineOP(TIP_engine, TIP_engine)
+            let min = 99999999
+            let index = -1
+            for(let t = 0;t<nodes.length;t++){
+                l.target = nodes[t].cap
+                let h = l.hypotenuse()
+                if(h <= min && h<=nodes[t].offset.radius){
+                    index = t
+                    min = h
+                }
+            }
+            if(index > -1){
+
+                if(keysPressed['r']){
+
+                    for(let t = 0;t<allaud.length;t++){
+                        allaud[t].volume = 0
+                    }
+                    addingto(nodes[index])
+                }else{
+                    console.log(nodes, nodes[index], index)
+                    for(let t = 0;t<allaud.length;t++){
+                        allaud[t].volume = 0
+                    }
+                    nodes[index].content.message.volume = 1
+                    nodes[index].content.message.play()
+
+                }
+    
+            }
+
 
             //for clicking mouse actions
         });
@@ -673,6 +707,9 @@
             circle.color = node.offset.colorball
             // if(keysPressed['g']){
 
+            if(node == addingOn){
+                circle.color = 'white'
+            }
                 circle.draw()
             // }
 
@@ -708,92 +745,98 @@
         }
     }
 
+    let allaud = []
     let topnodes = []
     let nodes = []
+    let aud = new Audio()
+    allaud.push(aud)
+    aud.src = 'src.wav'
     for(let t =0 ;t<1;t++){
-        let nodei = new Node(0, {'message':'top', 'x':500+Math.random(),'y':200})
+        let nodei = new Node(0, {'message':aud, 'x':500+Math.random(),'y':200})
         nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
+    allaud.push(nodei.content.message)
+
         topnodes.push(nodei)
         nodes.push(nodei)
-        for(let k = 0;k<2;k++){
-            let n1 = new Node(0, {'message':'child1', 'x':500+Math.random() ,'y': 200+k} )
-        n1.color = `rgb(${t*100}, ${k*100},${0*100})`
-        nodei.children.push(n1)
-            nodes.push(n1)
+        // for(let k = 0;k<2;k++){
+        //     let n1 = new Node(0, {'message':'child1', 'x':500+Math.random() ,'y': 200+k} )
+        // n1.color = `rgb(${t*100}, ${k*100},${0*100})`
+        // nodei.children.push(n1)
+        //     nodes.push(n1)
 
-        for(let j = 0;j<2;j++){
-            let n3 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-        n3.color = `rgb(${t*100}, ${k*100},${j*100})`
-            n1.children.push(n3)
-            nodes.push(n3)
+        // for(let j = 0;j<2;j++){
+        //     let n3 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+        // n3.color = `rgb(${t*100}, ${k*100},${j*100})`
+        //     n1.children.push(n3)
+        //     nodes.push(n3)
 
-            for(let r = 0;r<2;r++){
-                let n4 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-                n4.color = `rgb(${r*100}, ${k*100},${j*100})`
-                n3.children.push(n4)
-                nodes.push(n4)
+        //     for(let r = 0;r<2;r++){
+        //         let n4 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+        //         n4.color = `rgb(${r*100}, ${k*100},${j*100})`
+        //         n3.children.push(n4)
+        //         nodes.push(n4)
 
 
 
-            for(let q = 0;q<2;q++){
-                let n5 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-                n5.color = `rgb(${q*100}, ${k*100},${j*100})`
-                n4.children.push(n5)
-                nodes.push(n5)
-            }
+        //     for(let q = 0;q<2;q++){
+        //         let n5 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+        //         n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+        //         n4.children.push(n5)
+        //         nodes.push(n5)
+        //     }
 
-            }
+        //     }
     
 
 
-        }
+        // }
 
 
-        }
+        // }
     }
 
     
-    for(let t =0 ;t<1;t++){
-        let nodei = new Node(0, {'message':'top', 'x':800+Math.random(),'y':200})
-        nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
-        topnodes.push(nodei)
-        nodes.push(nodei)
-        for(let k = 0;k<1;k++){
-            let n1 = new Node(0, {'message':'child1', 'x':800+Math.random() ,'y': 200+k} )
-        n1.color = `rgb(${t*100}, ${k*100},${0*100})`
-        nodei.children.push(n1)
-            nodes.push(n1)
+    // for(let t =0 ;t<1;t++){
+    //     let nodei = new Node(0, {'message':'top', 'x':800+Math.random(),'y':200})
+    //     nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
+    //     topnodes.push(nodei)
+    //     nodes.push(nodei)
+    //     for(let k = 0;k<1;k++){
+    //         let n1 = new Node(0, {'message':'child1', 'x':800+Math.random() ,'y': 200+k} )
+    //     n1.color = `rgb(${t*100}, ${k*100},${0*100})`
+    //     nodei.children.push(n1)
+    //         nodes.push(n1)
 
-        for(let j = 0;j<1;j++){
-            let n3 = new Node(0, {'message':'child2', 'x':800+ (j),'y':200+j})
-        n3.color = `rgb(${t*100}, ${k*100},${j*100})`
-            n1.children.push(n3)
-            nodes.push(n3)
+    //     for(let j = 0;j<1;j++){
+    //         let n3 = new Node(0, {'message':'child2', 'x':800+ (j),'y':200+j})
+    //     n3.color = `rgb(${t*100}, ${k*100},${j*100})`
+    //         n1.children.push(n3)
+    //         nodes.push(n3)
 
-            for(let r = 0;r<2;r++){
-                let n4 = new Node(0, {'message':'child2', 'x':800+ (r-2) ,'y':200+j})
-                n4.color = `rgb(${r*100}, ${k*100},${j*100})`
-                n3.children.push(n4)
-                nodes.push(n4)
+    //         for(let r = 0;r<2;r++){
+    //             let n4 = new Node(0, {'message':'child2', 'x':800+ (r-2) ,'y':200+j})
+    //             n4.color = `rgb(${r*100}, ${k*100},${j*100})`
+    //             n3.children.push(n4)
+    //             nodes.push(n4)
 
 
 
-            for(let q = 0;q<3;q++){
-                let n5 = new Node(0, {'message':'child2', 'x':800+ (q-2) ,'y':200+j})
-                n5.color = `rgb(${q*100}, ${k*100},${j*100})`
-                n4.children.push(n5)
-                nodes.push(n5)
-            }
+    //         for(let q = 0;q<3;q++){
+    //             let n5 = new Node(0, {'message':'child2', 'x':800+ (q-2) ,'y':200+j})
+    //             n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+    //             n4.children.push(n5)
+    //             nodes.push(n5)
+    //         }
 
-            }
+    //         }
     
 
 
-        }
+    //     }
 
 
-        }
-    }
+    //     }
+    // }
     function pointInPolygon(point, polygon) {
         let inside = false;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -895,7 +938,14 @@
     offset.x = 0
     let timespeed = 20
     let timeon = 0
-    function main() {
+    let addingOn = {}
+    let adding = 0
+    function addingto(nodeon){
+        addingOn=nodeon
+        adding = 1
+        startRecording()
+    }
+   async function main() {
 
         off_context.clearRect(0,0,1280, 720) 
         off_context.drawImage(canvas,offset.x, 0, 1280,720, 0, 0,1280,720)
@@ -948,7 +998,60 @@
             worldcolor = `rgb(${color},${color2},${color1})` //indexed to buttons for click check in hash
         }
     }
+    if(keysPressed[' ']){
+        if(adding == 1){
+            adding = 0
+            let nodei = new Node(0, {'message':aud, 'x':addingOn.cap.x+(Math.random()-.5),'y':addingOn.cap.y+4})
+            nodei.content.message = await stopRecording()
+            allaud.push(nodei.content.message)
+            addingOn.children.push(nodei)
+            nodes.push(nodei)
+            console.log(nodei)
+        }
+    }
 }
 
 
+  let recorder;
 
+  async function startRecording() {
+    recorder = await recordAudio();
+    console.log("Recording started...");
+  }
+  
+  async function stopRecording() {
+    const result = await recorder.stop();
+    console.log("Recording stopped!");
+    return result.audio; // <-- you can call .play() on this
+  }
+  
+  // helper that creates the recording object
+  async function recordAudio() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const audioChunks = [];
+  
+    return new Promise((resolve) => {
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+  
+      mediaRecorder.start();
+  
+      resolve({
+        stop: () =>
+          new Promise((res) => {
+            mediaRecorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audio = new Audio(audioUrl);
+              res({ audioBlob, audioUrl, audio });
+            };
+            mediaRecorder.stop();
+            stream.getTracks().forEach(track => track.stop());
+          })
+      });
+    });
+  }
