@@ -207,8 +207,23 @@
             this.reflect = reflect
             this.strokeWidth = strokeWidth
             this.strokeColor = strokeColor
+            this.dragged = -1
         }
         draw() {
+            if(this.dragged==1){
+                console.log(2)
+                this.x = TIP_engine.x 
+                this.y  = TIP_engine.y 
+                if(!room.isPointInside(this)){
+                    let l = new LineOP(this,room.center)
+                    let a = l.angle()
+                    this.x-=(l.hypotenuse()/20)*Math.cos(a)
+                    this.y-=(l.hypotenuse()/20)*Math.sin(a)
+                    if(room.isPointInside(this)){
+                        this.dragged*=-1
+                    }
+                }
+            }
             canvas_context.lineWidth = 2
             canvas_context.strokeStyle = "black"
             canvas_context.beginPath();
@@ -367,6 +382,8 @@
             TIP_engine.y = YS_engine
             TIP_engine.body = TIP_engine
 
+            room.check(TIP_engine)
+
             //for clicking mouse actions
         });
         window.addEventListener('pointermove', continued_stimuli);
@@ -404,6 +421,7 @@
         }
         return color;
     }
+    let worldcolor = 'olive'
     class Node {
         constructor(type, content){
             this.body = {}
@@ -423,7 +441,7 @@
             this.cap.y =0 
             this.layer = 0
             this.parent = {}
-            this.offset.colorball = "olive"
+            this.offset.colorball = worldcolor
             this.latentColor = getRandomColor()
             this.unik=Math.random()*3
 
@@ -442,7 +460,7 @@
                     this.l.target = nodes[t].cap
 
                     this.hash[t] = {}
-                    this.hash[t].distance = this.l.hypotenuse()+1
+                    this.hash[t].distance = Math.max(this.l.hypotenuse()+1,10)
                     this.hash[t].x = nodes[t].cap.x
                     this.hash[t].y = nodes[t].cap.y
                     this.hash[t].radius = nodes[t].offset.radius
@@ -460,11 +478,11 @@
                 if(this.hash[keys[t]].distance < this.offset.radius + this.hash[keys[t]].radius){
 
                     force.x += (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
-                    // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
+                    force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
-                    this.offset.x -= force.x/1
-                    this.offset.y -= force.y/1
+                    this.offset.x -= force.x/.6
+                    this.offset.y -= force.y/.6
                 }else{
                     if(this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)*1.1){
                         if(this.hash[keys[t]].distance >( this.offset.radius + this.hash[keys[t]].radius)*.1){
@@ -474,8 +492,8 @@
                     // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
-                    this.offset.x += force.x/100
-                    this.offset.y += force.y/100
+                    this.offset.x += force.x/50
+                    this.offset.y += force.y/50
                         }
                     }
                 }
@@ -493,8 +511,8 @@
                         force2.y  -= (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
     
     
-                        this.offset.x -= force2.x/3
-                        this.offset.y -= force2.y/3
+                        this.offset.x -= force2.x/2
+                        this.offset.y -= force2.y/2
                     }
                 }
             }
@@ -508,11 +526,11 @@
                     let l = ( this.cap.y-this.parent.cap.y)
 
 
-                    if(l <  Math.min(Math.max(this.offset.radius/2, 12),30)*(2.5+this.unik)){
+                    if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
 
-                        this.offset.y+=.25*this.layer
+                        this.offset.y+=.4*this.layer
                     }else{
-                        this.offset.y-=.1*this.layer
+                        this.offset.y-=.2*this.layer
 
                     }
                     // if(l.hypotenuse() > 60){
@@ -523,12 +541,12 @@
 
                 for(let t =0 ;t<this.children.length;t++){
                     let l = this.children[t].cap.y-this.cap.y
-                    if(l < Math.min(Math.max(this.offset.radius/2, 12),30)*(2.5+this.unik)){
+                    if(l < Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
 
-                        this.children[t].offset.y+=.25*this.children[t].layer
+                        this.children[t].offset.y+=.4*this.children[t].layer
                     }else{
 
-                        this.children[t].offset.y-=.1*this.children[t].layer
+                        this.children[t].offset.y-=.2*this.children[t].layer
                     }
                 //     if(l.hypotenuse() > 60){
 
@@ -567,7 +585,7 @@
             }else{
                 if(made <= -2){
                     this.childing = 0
-                    this.offset.colorball = 'olive'
+                    this.offset.colorball = worldcolor
                     childrenset(this)
 
                 }
@@ -577,7 +595,7 @@
             // this.offset.radius = 12
             this.offset.radius += Math.max(30 + (18-(radsnap.hypotenuse()/1))/10,12)
             if(this.childing==1){
-                this.offset.radius+=10
+                this.offset.radius+=20
                 this.offset.radius /=51
             }else{
 
@@ -596,7 +614,7 @@
             childrenset(node.children[t])
         }
     }
-    let circle = new Circle(0,0,1, 'olive')
+    let circle = new Circle(0,0,1, worldcolor)
 
     function drawNode(node){
         if(node.type == 0){
@@ -604,7 +622,15 @@
             circle.y = node.body.y+node.offset.y
             circle.radius = node.offset.radius
             circle.color = node.offset.colorball
-            circle.draw()
+            // if(keysPressed['g']){
+
+                circle.draw()
+            // }
+
+            if(keysPressed['f']){
+            let r = new Circle(circle.x + 50, circle.y + 50, circle.radius, node.latentColor)
+            r.draw()
+            }
             node.cap = {}
             node.cap.x = circle.x
             node.cap.y = circle.y
@@ -635,37 +661,37 @@
 
     let topnodes = []
     let nodes = []
-    for(let t =0 ;t<3;t++){
-        let nodei = new Node(0, {'message':'top', 'x':200+(t*300),'y':200})
+    for(let t =0 ;t<1;t++){
+        let nodei = new Node(0, {'message':'top', 'x':500+Math.random(),'y':200})
         nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
         topnodes.push(nodei)
         nodes.push(nodei)
-        for(let k = 0;k<3;k++){
-            let n1 = new Node(0, {'message':'child1', 'x':200 + (t*300) + (k*20),'y': 200+k} )
+        for(let k = 0;k<2;k++){
+            let n1 = new Node(0, {'message':'child1', 'x':500+Math.random() ,'y': 200+k} )
         n1.color = `rgb(${t*100}, ${k*100},${0*100})`
         nodei.children.push(n1)
             nodes.push(n1)
 
         for(let j = 0;j<2;j++){
-            let n3 = new Node(0, {'message':'child2', 'x':200 + (t*300) + (k*20) + (j*10),'y':200+j})
+            let n3 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
         n3.color = `rgb(${t*100}, ${k*100},${j*100})`
             n1.children.push(n3)
             nodes.push(n3)
 
             for(let r = 0;r<2;r++){
-                let n4 = new Node(0, {'message':'child2', 'x':200 + (t*300) + (k*20) + (j*10),'y':200+j})
+                let n4 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
                 n4.color = `rgb(${r*100}, ${k*100},${j*100})`
                 n3.children.push(n4)
                 nodes.push(n4)
 
 
 
-            // for(let q = 0;q<2;q++){
-            //     let n5 = new Node(0, {'message':'child2', 'x':200 + (t*300) + (k*20) + (j*10),'y':200+j})
-            //     n5.color = `rgb(${q*100}, ${k*100},${j*100})`
-            //     n4.children.push(n5)
-            //     nodes.push(n5)
-            // }
+            for(let q = 0;q<2;q++){
+                let n5 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+                n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+                n4.children.push(n5)
+                nodes.push(n5)
+            }
 
             }
     
@@ -677,7 +703,130 @@
         }
     }
 
+    
+    for(let t =0 ;t<1;t++){
+        let nodei = new Node(0, {'message':'top', 'x':800+Math.random(),'y':200})
+        nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
+        topnodes.push(nodei)
+        nodes.push(nodei)
+        for(let k = 0;k<1;k++){
+            let n1 = new Node(0, {'message':'child1', 'x':800+Math.random() ,'y': 200+k} )
+        n1.color = `rgb(${t*100}, ${k*100},${0*100})`
+        nodei.children.push(n1)
+            nodes.push(n1)
+
+        for(let j = 0;j<1;j++){
+            let n3 = new Node(0, {'message':'child2', 'x':800+ (j),'y':200+j})
+        n3.color = `rgb(${t*100}, ${k*100},${j*100})`
+            n1.children.push(n3)
+            nodes.push(n3)
+
+            for(let r = 0;r<2;r++){
+                let n4 = new Node(0, {'message':'child2', 'x':800+ (r-2) ,'y':200+j})
+                n4.color = `rgb(${r*100}, ${k*100},${j*100})`
+                n3.children.push(n4)
+                nodes.push(n4)
+
+
+
+            for(let q = 0;q<3;q++){
+                let n5 = new Node(0, {'message':'child2', 'x':800+ (q-2) ,'y':200+j})
+                n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+                n4.children.push(n5)
+                nodes.push(n5)
+            }
+
+            }
+    
+
+
+        }
+
+
+        }
+    }
+    function pointInPolygon(point, polygon) {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i].x, yi = polygon[i].y;
+            const xj = polygon[j].x, yj = polygon[j].y;
+    
+            const intersect = ((yi > point.y) !== (yj > point.y)) &&
+                (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+    
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+    
+    class RoomShape {
+        constructor(sides){
+
+            this.dots = []
+            this.outx = 0
+            this.outy = 0
+            this.center = new Circle(200, 500, 100, 'red')
+            this.da = 0
+            for(let t=0;t<6;t++){
+
+                this.outx = Math.cos(this.da)*(20+(Math.sin(this.da*sides)*1))
+                this.outy = Math.sin(this.da)*(20+(Math.sin(this.da*sides)*1))
+                let point = new Circle(this.center.x + this.outx, this.center.y+this.outy, 7, 'yellow')
+                this.dots.push(point)
+                this.da += ((Math.PI*2)/6)
+            }
+
+            this.points = []
+            this.a = 0
+            for(let t = 0;t<30;t++){
+                this.outx = Math.cos(this.a)*(100+(Math.sin(this.a*sides)*30))
+                this.outy = Math.sin(this.a)*(100+(Math.sin(this.a*sides)*30))
+                let point = new Point(this.center.x + this.outx, this.center.y+this.outy )
+                this.points.push(point)
+                this.a += ((Math.PI*2)/30)
+            }
+        }
+        isPointInside(point){
+            return pointInPolygon(point, this.points)
+        }
+        check(point){
+            for(let t = 0;t<this.dots.length;t++){
+                if(this.dots[t].isPointInside(point)){
+                    this.dots[t].dragged*=-1
+                }
+            }
+        }
+        draw(){
+            if(this.isPointInside(TIP_engine)){
+                this.center.color = "olive"
+            }else{
+                this.center.color = "tan"
+
+            }
+            this.center.draw()
+            let inll = new LineOP(this.points[0],this.points[this.points.length-1], 'white', 3)
+            inll.draw()
+            for(let t = 0;t<this.dots.length;t++){
+                this.dots[t].draw()
+            }
+            for(let t = 0;t<this.points.length-1;t++){
+                let inll = new LineOP(this.points[t],this.points[t+1], 'white', 3)
+                inll.draw()
+                // let dot = new Circle(this.points[t].x, this.points[t].y, 3, 'white')
+                // dot.draw()
+            }
+        }
+    }
+
+    let room = new RoomShape(5)
+
+    let pix = canvas_context.getImageData(0,0,1280,720)
     let rect1 = new Rectangle(0, 150, 1280, 40, "green")
+    function indexer(point, width) {
+        const x = Math.floor(point.x);
+        const y = Math.floor(point.y);
+        return (y * width + x) * 4;
+    }
     function main() {
         made--
         canvas_context.clearRect(-1,-1,canvas.width*1, canvas.height*1) 
@@ -697,6 +846,23 @@
 
                 nodes[t].offsetting()
             // }
+        }
+        
+
+        // let room = new RoomShape(5)
+        room.draw()
+
+        if(keysPressed['f']){
+            pix = canvas_context.getImageData(0,0,1280,720)
+
+            let p = new Point(TIP_engine.x, TIP_engine.y)
+
+            let color = pix.data[indexer(p,1280)]
+            let color2 = pix.data[indexer(p,1280)+1]
+            let color1 = pix.data[indexer(p,1280)+2]
+
+            worldcolor = `rgb(${color},${color2},${color1})`
+
         }
     }
 
