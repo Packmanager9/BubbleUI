@@ -378,7 +378,7 @@
             FLEX_engine = canvas.getBoundingClientRect();
             XS_engine = e.clientX - FLEX_engine.left;
             YS_engine = e.clientY - FLEX_engine.top;
-            TIP_engine.x = XS_engine
+            TIP_engine.x = XS_engine -offset.x
             TIP_engine.y = YS_engine
             TIP_engine.body = TIP_engine
 
@@ -393,12 +393,22 @@
         })
         function continued_stimuli(e) {
             FLEX_engine = canvas.getBoundingClientRect();
+            let ft = new Point(TIP_engine.x, TIP_engine.y)
             XS_engine = e.clientX - FLEX_engine.left;
             YS_engine = e.clientY - FLEX_engine.top;
-            TIP_engine.x = XS_engine
+            TIP_engine.x = XS_engine-offset.x
             TIP_engine.y = YS_engine
             TIP_engine.body = TIP_engine
-
+            let l = new LineOP(ft,TIP_engine)
+            if(l.hypotenuse() >1){
+            movedMouse = 1
+            }
+            if(l.hypotenuse() >10){
+                startmouse = 5
+            }
+            if(l.hypotenuse() >50){
+                startmouse = 40
+            }
             //for moving mouse actions
         }
     }
@@ -410,7 +420,9 @@
     }
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
+    let offcanvas = document.getElementById('offcanvas') //getting canvas from document
 
+    let off_context =  offcanvas.getContext('2d');
     setUp(setup_canvas) // setting up canvas refrences, starting timer. 
 
     function getRandomColor() { // random color
@@ -481,8 +493,14 @@
                     force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
+                    if(this.childos != 1){
                     this.offset.x -= force.x/.6
                     this.offset.y -= force.y/.6
+                    }else{
+
+                    this.offset.x -= force.x/5.6
+                    this.offset.y -= force.y/5.6
+                    }
                 }else{
                     if(this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)*1.1){
                         if(this.hash[keys[t]].distance >( this.offset.radius + this.hash[keys[t]].radius)*.1){
@@ -492,8 +510,14 @@
                     // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
+                    if(this.childos != 1){
                     this.offset.x += force.x/50
                     this.offset.y += force.y/50
+                    }else{
+
+                    this.offset.x += force.x/550
+                    this.offset.y += force.y/550
+                    }
                         }
                     }
                 }
@@ -511,8 +535,14 @@
                         force2.y  -= (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
     
     
+                        if(this.childos != 1){
                         this.offset.x -= force2.x/2
                         this.offset.y -= force2.y/2
+                        }else{
+
+                        this.offset.x -= force2.x/55
+                        this.offset.y -= force2.y/55
+                        }
                     }
                 }
             }
@@ -526,11 +556,23 @@
                     let l = ( this.cap.y-this.parent.cap.y)
 
 
-                    if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+                    if(this.childos != 1){
 
-                        this.offset.y+=.4*this.layer
+                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+
+                            this.offset.y+=.4*this.layer
+                        }else{
+                            this.offset.y-=.2*this.layer
+    
+                        }
                     }else{
-                        this.offset.y-=.2*this.layer
+                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+
+                            this.offset.y+=0*this.layer
+                        }else{
+                            this.offset.y-=0*this.layer
+    
+                        }
 
                     }
                     // if(l.hypotenuse() > 60){
@@ -578,12 +620,18 @@
                     nodes[t].childing = 0
                     childrenset(nodes[t])
                 }
+                this.childos = 0 //1 for lock mouse
                 this.childing = 1
                 this.offset.colorball = this.latentColor
                 childrenset(this)
                 made = 1
             }else{
                 if(made <= -2){
+                    if(this.childos ==1){
+                        this.offset.x -= (this.cap.x-TIP_engine.x)/4
+                        this.offset.y -= (this.cap.y-TIP_engine.y)/4
+                    }
+                    this.childos = 0
                     this.childing = 0
                     this.offset.colorball = worldcolor
                     childrenset(this)
@@ -591,15 +639,15 @@
                 }
                 
             }
-            this.offset.radius *=50
+            this.offset.radius *=10
             // this.offset.radius = 12
             this.offset.radius += Math.max(30 + (18-(radsnap.hypotenuse()/1))/10,12)
             if(this.childing==1){
-                this.offset.radius+=20
-                this.offset.radius /=51
+                this.offset.radius+=15
+                this.offset.radius /=11
             }else{
 
-            this.offset.radius /=51
+            this.offset.radius /=11
             }
 
         }
@@ -616,7 +664,8 @@
     }
     let circle = new Circle(0,0,1, worldcolor)
 
-    function drawNode(node){
+        function drawNode(node){
+            // node.body.x -= .1
         if(node.type == 0){
             circle.x = node.body.x+node.offset.x
             circle.y = node.body.y+node.offset.y
@@ -767,13 +816,16 @@
             this.outy = 0
             this.center = new Circle(200, 500, 100, 'red')
             this.da = 0
-            for(let t=0;t<6;t++){
+            for(let t=0;t<12;t++){
 
-                this.outx = Math.cos(this.da)*(20+(Math.sin(this.da*sides)*1))
-                this.outy = Math.sin(this.da)*(20+(Math.sin(this.da*sides)*1))
+                this.outx = Math.cos(this.da)*(40+(Math.sin(this.da*sides)*1))
+                this.outy = Math.sin(this.da)*(40+(Math.sin(this.da*sides)*1))
                 let point = new Circle(this.center.x + this.outx, this.center.y+this.outy, 7, 'yellow')
+                point.r = 100
+                point.g = 100
+                point.b = 0
                 this.dots.push(point)
-                this.da += ((Math.PI*2)/6)
+                this.da += ((Math.PI*2)/12)
             }
 
             this.points = []
@@ -807,6 +859,15 @@
             let inll = new LineOP(this.points[0],this.points[this.points.length-1], 'white', 3)
             inll.draw()
             for(let t = 0;t<this.dots.length;t++){
+                this.dots[t].color = `rgb(${this.dots[t].r}, ${this.dots[t].g}, ${this.dots[t].b})`
+         
+                if(Math.random() < .1){
+                    let ran = (Math.random()-.5) *25
+                    this.dots[t].g += ran
+                    this.dots[t].r -= ran
+                }
+                this.dots[t].r = Math.min(Math.max(this.dots[t].r, 0),255)
+                this.dots[t].g = Math.min(Math.max(this.dots[t].g, 0),255)
                 this.dots[t].draw()
             }
             for(let t = 0;t<this.points.length-1;t++){
@@ -818,18 +879,53 @@
         }
     }
 
-    let room = new RoomShape(5)
 
+    let room = new RoomShape(5)
     let pix = canvas_context.getImageData(0,0,1280,720)
-    let rect1 = new Rectangle(0, 150, 1280, 40, "green")
+    let rect1 = new Rectangle(-1000, 150, 12800, 40, "green")
     function indexer(point, width) {
         const x = Math.floor(point.x);
         const y = Math.floor(point.y);
         return (y * width + x) * 4;
     }
+    let movedMouse= 1
+    let startmouse= 100
+
+    let offset = {}
+    offset.x = 0
+    let timespeed = 20
+    let timeon = 0
     function main() {
+
+        off_context.clearRect(0,0,1280, 720) 
+        off_context.drawImage(canvas,offset.x, 0, 1280,720, 0, 0,1280,720)
+        canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
+        // timespeed--
+        timeon = 0
+        if(timespeed<=0){
+            timespeed = 20
+            canvas_context.translate(-1, 0)
+            offset.x-=1
+            timeon = 1
+            for(let t= 0;t<nodes.length;t++){
+                if(nodes[t].childing ==1){
+
+                    if(nodes[t].childos ==1){
+                        nodes[t].offset.x -= (nodes[t].cap.x-TIP_engine.x)/2
+                        nodes[t].offset.y -= (nodes[t].cap.y-TIP_engine.y)/2
+                    }
+                }
+            }
+        }
+
+        if(!(movedMouse == 1 ||startmouse >0)){
+        canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
+        canvas_context.drawImage(offcanvas,0, 0, 1280,720, 0, 0,1280,720)
+        }else if(movedMouse == 1 ||startmouse >0){
         made--
-        canvas_context.clearRect(-1,-1,canvas.width*1, canvas.height*1) 
+            startmouse--
+            movedMouse = 0
+        canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
         rect1.draw()
 
         for(let t =0;t<topnodes.length;t++){
@@ -838,31 +934,21 @@
         for(let t =0;t<topnodes.length;t++){
             drawNode(topnodes[t])
         }       
-        
         for(let t =0;t<nodes.length;t++){
-            // if(topnodes.includes(nodes[t])){
-
-            // }else{
-
                 nodes[t].offsetting()
-            // }
         }
-        
-
-        // let room = new RoomShape(5)
         room.draw()
-
         if(keysPressed['f']){
-            pix = canvas_context.getImageData(0,0,1280,720)
-
-            let p = new Point(TIP_engine.x, TIP_engine.y)
-
-            let color = pix.data[indexer(p,1280)]
-            let color2 = pix.data[indexer(p,1280)+1]
-            let color1 = pix.data[indexer(p,1280)+2]
-
-            worldcolor = `rgb(${color},${color2},${color1})`
-
+            pix = canvas_context.getImageData(0,0,1280,720) //total canvas pixel data
+            let p = new Point(TIP_engine.x, TIP_engine.y) //pointer location for index
+            let iinde = indexer(p,1280)  //location of pixel 
+            let color = pix.data[iinde]  //red
+            let color2 = pix.data[iinde+1] //green
+            let color1 = pix.data[iinde+2]  //blue
+            worldcolor = `rgb(${color},${color2},${color1})` //indexed to buttons for click check in hash
         }
     }
+}
+
+
 
