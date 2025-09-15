@@ -94,6 +94,8 @@
     let keysPressed = {}
     let FLEX_engine
     let TIP_engine = {}
+    TIP_engine.x = 10000
+    TIP_engine.y = 10000
     let XS_engine
     let YS_engine
     class Point {
@@ -412,7 +414,7 @@
             this.offset = {}
             this.offset.x = 0
             this.offset.y = 0
-            this.offset.radius = 20
+            this.offset.radius = 12
             this.children = []
             this.type = type
             this.l = new LineOP(this.body, this.body)
@@ -444,6 +446,7 @@
                     this.hash[t].x = nodes[t].cap.x
                     this.hash[t].y = nodes[t].cap.y
                     this.hash[t].radius = nodes[t].offset.radius
+                    this.hash[t].p = nodes.indexOf(nodes[t])
                 }
             }
 
@@ -464,6 +467,7 @@
                     this.offset.y -= force.y/1
                 }else{
                     if(this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)*1.1){
+                        if(this.hash[keys[t]].distance >( this.offset.radius + this.hash[keys[t]].radius)*.1){
 
                         
                     force.x += (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
@@ -472,25 +476,29 @@
 
                     this.offset.x += force.x/100
                     this.offset.y += force.y/100
+                        }
                     }
                 }
             }
 
-        //     if(!(topnodes.includes(this))){
-        //     for(let t = 0;t<keys.length;t++){
-        //         force2.x = 0
-        //         force2.y = 0
-        //         if(this.hash[keys[t]].distance > 40){
+            if(!(topnodes.includes(this))){
+            for(let t = 0;t<keys.length;t++){
+                if(this.hash[keys[t]].p == nodes.indexOf(this.parent)){
 
-        //             force2.x -= (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
-        //             force2.y  -= (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
-
-
-        //             this.offset.x -= force2.x/100
-        //             this.offset.y -= force2.y/100
-        //         }
-        //     }
-        // }
+                    force2.x = 0
+                    force2.y = 0
+                    if(this.hash[keys[t]].distance > this.offset.radius*2){
+    
+                        force2.x -= (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
+                        force2.y  -= (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
+    
+    
+                        this.offset.x -= force2.x/3
+                        this.offset.y -= force2.y/3
+                    }
+                }
+            }
+        }
             // console.log(this.hash)
 
             // this.offset.x -= (Math.random()-.5)*2
@@ -502,9 +510,9 @@
 
                     if(l <  Math.min(Math.max(this.offset.radius/2, 12),30)*(2.5+this.unik)){
 
-                        this.offset.y+=.5*this.layer
+                        this.offset.y+=.25*this.layer
                     }else{
-                        this.offset.y-=.2*this.layer
+                        this.offset.y-=.1*this.layer
 
                     }
                     // if(l.hypotenuse() > 60){
@@ -517,10 +525,10 @@
                     let l = this.children[t].cap.y-this.cap.y
                     if(l < Math.min(Math.max(this.offset.radius/2, 12),30)*(2.5+this.unik)){
 
-                        this.children[t].offset.y+=.5*this.children[t].layer
+                        this.children[t].offset.y+=.25*this.children[t].layer
                     }else{
 
-                        this.children[t].offset.y-=.2*this.children[t].layer
+                        this.children[t].offset.y-=.1*this.children[t].layer
                     }
                 //     if(l.hypotenuse() > 60){
 
@@ -565,11 +573,17 @@
                 }
                 
             }
-            this.offset.radius = Math.max(30 + (18-(radsnap.hypotenuse()/1))/10,12)
-
+            this.offset.radius *=50
+            // this.offset.radius = 12
+            this.offset.radius += Math.max(30 + (18-(radsnap.hypotenuse()/1))/10,12)
             if(this.childing==1){
-                this.offset.radius*=1.4
+                this.offset.radius+=10
+                this.offset.radius /=51
+            }else{
+
+            this.offset.radius /=51
             }
+
         }
     }
 
