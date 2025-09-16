@@ -383,7 +383,7 @@
 let holdTarget = null;
 let holdTimeout = null;
 let didHold = false;
-const HOLD_DELAY = 120; // ms to count as a "hold"
+const HOLD_DELAY = 250; // ms to count as a "hold"
 
 window.addEventListener('pointerdown', e => {
     FLEX_engine = canvas.getBoundingClientRect();
@@ -473,17 +473,39 @@ window.addEventListener('pointerup', async e => {
                     console.log(nodei);
 
                     holdTarget = {};
+                    addingOn = {};
                 }
             // }
         } else if (holdTarget) {
-            // Quick tap → just play the node
-            if (pausedex !== nodes.indexOf(holdTarget)) {
-                holdTarget.content.message.volume = 1;
-                holdTarget.content.message.play();
-                holdTarget.touched = 1;
+            if (!didHold && holdTarget) {
+                movedMouse = 1;
+            
+                // Reset all node audio
+                for (let t = 0; t < nodes.length; t++) {
+                    nodes[t].content.message.volume = 0;
+                    nodes[t].content.message.pause();
+                    nodes[t].content.message.currentTime = 0;
+                }
+            
+                const index = nodes.indexOf(holdTarget);
+            
+                if (pausedex === index) {
+                    // Node was already playing, pause it
+                    holdTarget.content.message.pause();
+                    holdTarget.content.message.currentTime = 0;
+                    pausedex = -1;
+                } else {
+                    // Play this node
+                    holdTarget.content.message.volume = 1;
+                    holdTarget.content.message.play();
+                    holdTarget.touched = 1;
+                }
+            
+                pausedex = index;
+                holdTarget = null;
+                addingOn = {};
             }
-            pausedex = nodes.indexOf(holdTarget);
-            holdTarget = null;
+            
         }
     }
 });
