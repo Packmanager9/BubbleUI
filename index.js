@@ -1,15 +1,12 @@
 'use strict';
-const { app, BrowserWindow } = require("electron");
 const express = require('express');
 const path = require('path');
 const { Server } = require('ws');
 
-let mainWindow;
-
 const PORT = process.env.PORT || 3000;
 const INDEX = 'force.html';
 
-// Fix 1: Serve static files and handle routes properly
+// Serve static files and handle routes properly
 const expressApp = express();
 
 // Serve static files from current directory
@@ -24,7 +21,7 @@ const server = expressApp.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
 
-// Fix 2: WebSocket server setup
+// WebSocket server setup
 const wss = new Server({ server });
 
 // Your existing game logic
@@ -343,33 +340,4 @@ wss.on("connection", ws => {
     })
 })
 
-// Electron app setup
-app.on("ready", () => {
-    mainWindow = new BrowserWindow({
-        width: 1280,
-        height: 720,
-        webPreferences: {
-            nodeIntegration: false,
-            webSecurity: true,
-            contextIsolation: true
-        },
-    });
-
-    // Load the local server URL instead of file
-    mainWindow.loadURL(`http://localhost:${PORT}`);
-    
-    mainWindow.on("closed", () => {
-        mainWindow = null;
-        server.close();
-    });
-});
-
-app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") app.quit();
-});
-
-app.on("activate", () => {
-    if (mainWindow === null) {
-        createWindow();
-    }
-});
+console.log(`BubbleUI server started on port ${PORT}`);
