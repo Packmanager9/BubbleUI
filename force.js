@@ -416,9 +416,14 @@
                         nodes[t].content.message.pause();   
                         nodes[t].content.message.currentTime = 0;
                     }
-                    nodes[index].content.message.volume = 1
-                    nodes[index].content.message.play()
-                    nodes[index].touched = 1
+                    if(pausedex == index){
+
+                    }else{
+                        nodes[index].content.message.volume = 1
+                        nodes[index].content.message.play()
+                        nodes[index].touched = 1
+                    }
+                    pausedex = index
 
                 }
     
@@ -964,6 +969,7 @@
     }
 
     let coloron = getRandomColor()
+    let pausedex = -1
    async function main() {
 
         off_context.clearRect(0,0,1280, 1280) 
