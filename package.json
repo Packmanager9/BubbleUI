@@ -1,0 +1,33 @@
+{
+  "name": "wodexbox",
+  "version": "1.0.0",
+  "description": "game",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "npm start",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.wodopom",
+    "productName": "wodopom",
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron-package-manager": "^0.1.0",
+    "express": "^5.1.0",
+    "umap-js": "^1.4.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "^37.3.1",
+    "electron-builder": "^25.1.8"
+  }
+}

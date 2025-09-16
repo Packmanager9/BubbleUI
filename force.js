@@ -401,12 +401,14 @@
 
                 if(keysPressed['r']){
 
+                    movedMouse = 1
                     for(let t = 0;t<allaud.length;t++){
                         allaud[t].volume = 0
                     }
                     addingto(nodes[index])
                 }else{
-                    console.log(nodes, nodes[index], index)
+                    movedMouse = 1
+                    // console.log(nodes, nodes[index], index)
                     for(let t = 0;t<allaud.length;t++){
                         allaud[t].volume = 0
                     }
@@ -468,8 +470,11 @@
         return color;
     }
     let worldcolor = 'olive'
+    nodeid = 0
     class Node {
         constructor(type, content){
+            this.ID = nodeid
+            nodeid++
             this.body = {}
             this.body.type = type
             this.content = content
@@ -592,7 +597,7 @@
 
                     if(this.childos != 1){
 
-                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
                             this.offset.y+=.4*this.layer
                         }else{
@@ -600,7 +605,7 @@
     
                         }
                     }else{
-                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
                             this.offset.y+=0*this.layer
                         }else{
@@ -617,7 +622,7 @@
 
                 for(let t =0 ;t<this.children.length;t++){
                     let l = this.children[t].cap.y-this.cap.y
-                    if(l < Math.min(Math.max(this.offset.radius/1.4, 12),30)*(2.5+this.unik)){
+                    if(l < Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
                         this.children[t].offset.y+=.4*this.children[t].layer
                     }else{
@@ -999,15 +1004,49 @@
         }
     }
     if(keysPressed[' ']){
-        if(adding == 1){
-            adding = 0
-            let nodei = new Node(0, {'message':aud, 'x':addingOn.cap.x+(Math.random()-.5),'y':addingOn.cap.y+4})
-            nodei.content.message = await stopRecording()
-            allaud.push(nodei.content.message)
-            addingOn.children.push(nodei)
-            nodes.push(nodei)
-            console.log(nodei)
-        }
+
+        startmouse = 10;
+if(adding == 1){
+  const audioResult = await stopRecording();
+  if (!audioResult || !audioResult.audioBlob) {
+    console.error("sendAudioObject: missing audioBlob", audioResult);
+    return;
+  }
+  
+  // Create Audio object for local playback
+  const audioBlob = audioResult.audioBlob;
+  const url = URL.createObjectURL(audioBlob);
+  const audio = new Audio();
+  audio.src = url;
+  
+  // Add error handling for audio
+  audio.addEventListener('error', (e) => {
+    console.error('Audio loading error:', e);
+    URL.revokeObjectURL(url);
+  });
+  
+  // Create node with Audio object for playback
+  let nodei = new Node(0, {
+    message: {},
+    x: addingOn.cap.x + (Math.random() - 0.5),
+    y: addingOn.cap.y + 4
+  });
+  
+  // Store the Audio object so .play() will work
+  nodei.content.message = audio;
+  nodei.messageType = "audio"; // Mark as audio message
+  nodei.audioResult = audioResult; // Keep original data if needed
+  
+  // Send to other clients
+  sendAudioObject(addingOn.ID, audioResult);
+  
+  // Store locally
+  allaud.push(audioResult);
+  addingOn.children.push(nodei);
+  nodes.push(nodei);
+  console.log(nodei);
+}
+
     }
 }
 
@@ -1018,12 +1057,12 @@
     recorder = await recordAudio();
     console.log("Recording started...");
   }
-  
   async function stopRecording() {
     const result = await recorder.stop();
     console.log("Recording stopped!");
-    return result.audio; // <-- you can call .play() on this
+    return result; // ✅ return the full object { audioBlob, audioUrl, audio }
   }
+  
   
   // helper that creates the recording object
   async function recordAudio() {
@@ -1055,3 +1094,112 @@
       });
     });
   }
+
+
+
+  // connect to the same WS as your server
+const ws = new WebSocket("ws://localhost:3000");
+
+// when connected
+ws.onopen = () => {
+  console.log("WS connected!");
+};
+
+// helper: send object + audio file
+// helper: send object + audio file
+async function sendAudioObject(id, file) {
+    if (!file || !file.audioBlob) {
+      console.error("sendAudioObject: missing audioBlob", file);
+      return;
+    }
+  
+    try {
+      // Convert audio blob to ArrayBuffer
+      const audioBuffer = await file.audioBlob.arrayBuffer();
+  
+      // Convert metadata JSON to Uint8Array
+      const metadata = JSON.stringify({ type: "audio", ID: id });
+      const encoder = new TextEncoder();
+      const metadataBytes = encoder.encode(metadata);
+  
+      // Create combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
+      const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
+      const combined = new Uint8Array(totalLength);
+  
+      // Write metadata length (4 bytes, little-endian)
+      const view = new DataView(combined.buffer);
+      view.setUint32(0, metadataBytes.byteLength, true);
+  
+      // Copy metadata and audio into combined buffer
+      combined.set(metadataBytes, 4);
+      combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
+  
+      // Send combined buffer in one call
+      ws.send(combined.buffer);
+  
+      console.log("Audio sent successfully in one message, id:", id);
+    } catch (error) {
+      console.error("Failed to send audio:", error);
+    }
+  }
+  
+
+  socketize(ws)
+  
+  function socketize(ws) {
+    ws.binaryType = "arraybuffer";
+  
+    ws.addEventListener("message", async ({ data }) => {
+      try {
+        if (typeof data === "string") {
+          // Handle normal text messages
+          const d = JSON.parse(data);
+          let node = new Node(0, {
+            message: {},
+            x: nodes[d.ID].cap.x + (Math.random() - 0.5),
+            y: nodes[d.ID].cap.y + 4
+          });
+          node.content.message = d.audio; // This is text, not audio
+          node.messageType = "text";
+          nodes[d.ID].children.push(node);
+          nodes.push(node);
+  
+        } else if (data instanceof ArrayBuffer) {
+          // Handle combined metadata + audio
+          const view = new DataView(data);
+          const metadataLength = view.getUint32(0, true); // little-endian
+          const metadataBytes = new Uint8Array(data, 4, metadataLength);
+          const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
+  
+          const audioBytes = data.slice(4 + metadataLength);
+          const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
+          const url = URL.createObjectURL(audioBlob);
+  
+          const audio = new Audio();
+          audio.src = url;
+  
+          audio.addEventListener("error", (e) => {
+            console.error("Audio loading error:", e);
+            URL.revokeObjectURL(url);
+          });
+  
+          audio.addEventListener("loadeddata", () => {
+            console.log("Audio loaded and ready");
+          });
+  
+          let node = new Node(0, {
+            message: {},
+            x: nodes[metadata.ID].cap.x + (Math.random() - 0.5),
+            y: nodes[metadata.ID].cap.y + 4
+          });
+  
+          node.content.message = audio; // store playable audio
+          nodes[metadata.ID].children.push(node);
+          nodes.push(node);
+        }
+      } catch (e) {
+        console.error("Failed to handle message:", e);
+      }
+    });
+  }
+  
