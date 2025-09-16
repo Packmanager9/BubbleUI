@@ -1,33 +1,26 @@
 {
-  "name": "wodexbox",
+  "name": "coreboys",
   "version": "1.0.0",
-  "description": "game",
-  "main": "index.js",
+  "main": "Coreboy.js",
+  "engines": {
+    "node": "12.17.x"
+  },
   "scripts": {
-    "start": "electron .",
-    "test": "npm start",
-    "build": "electron-builder"
+    "start": "node index.js"
   },
-  "build": {
-    "appId": "com.wodopom",
-    "productName": "wodopom",
-    "mac": {
-      "target": "dmg"
-    },
-    "win": {
-      "target": "nsis"
-    }
-  },
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "electron-package-manager": "^0.1.0",
-    "express": "^5.1.0",
-    "umap-js": "^1.4.0",
-    "ws": "^8.18.3"
+    "bufferutil": "^4.0.3",
+    "express": "^4.17.1",
+    "mongo": "^0.1.0",
+    "mongoose": "^5.12.14",
+    "permessage-deflate": "^0.1.7",
+    "tone": "^14.7.77",
+    "utf-8-validate": "^5.0.5",
+    "websocket-extensions": "^0.1.4",
+    "ws": "^7.4.5"
   },
-  "devDependencies": {
-    "electron": "^37.3.1",
-    "electron-builder": "^25.1.8"
-  }
+  "description": "This engine is meant to help take some of the tedious setup out of making browser-based games and toys."
 }
