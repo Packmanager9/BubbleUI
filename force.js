@@ -477,6 +477,7 @@
     nodeid = 0
     class Node {
         constructor(type, content){
+            this.usercolor = 'orange'
             this.ID = nodeid
             nodeid++
             this.body = {}
@@ -676,7 +677,7 @@
                     }
                     this.childos = 0
                     this.childing = 0
-                    this.offset.colorball = worldcolor
+                    // this.offset.colorball = worldcolor
                     childrenset(this)
 
                 }
@@ -718,6 +719,8 @@
 
             if(node == addingOn){
                 circle.color = 'white'
+            }else{
+                circle.color  = node.usercolor
             }
                 circle.draw()
             // }
@@ -954,6 +957,8 @@
         adding = 1
         startRecording()
     }
+
+    let coloron = getRandomColor()
    async function main() {
 
         off_context.clearRect(0,0,1280, 1280) 
@@ -1125,7 +1130,7 @@ async function sendAudioObject(id, file) {
       const audioBuffer = await file.audioBlob.arrayBuffer();
   
       // Convert metadata JSON to Uint8Array
-      const metadata = JSON.stringify({ type: "audio", ID: id });
+      const metadata = JSON.stringify({ type: "audio", ID: id, usercolor:coloron});
       const encoder = new TextEncoder();
       const metadataBytes = encoder.encode(metadata);
   
@@ -1166,6 +1171,8 @@ async function sendAudioObject(id, file) {
             x: nodes[d.ID].cap.x + (Math.random() - 0.5),
             y: nodes[d.ID].cap.y + 4
           });
+
+          node.usercolor = d.usercolor
           node.content.message = d.audio; // This is text, not audio
           node.messageType = "text";
           nodes[d.ID].children.push(node);
@@ -1200,6 +1207,7 @@ async function sendAudioObject(id, file) {
             y: nodes[metadata.ID].cap.y + 4
           });
   
+          node.usercolor = metadata.usercolor
           node.content.message = audio; // store playable audio
           allaud.push(node.content.message)
           nodes[metadata.ID].children.push(node);
