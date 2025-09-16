@@ -377,10 +377,13 @@
         document.addEventListener('keyup', (event) => {
             delete keysPressed[event.key]; //for removing key from list of pressed
         });
-        
-        let holdTarget = null;
+
+
+///here
+let holdTarget = null;
 let holdTimeout = null;
-const HOLD_DELAY = 300; // ms to count as a "hold"
+let didHold = false;
+const HOLD_DELAY = 120; // ms to count as a "hold"
 
 window.addEventListener('pointerdown', e => {
     FLEX_engine = canvas.getBoundingClientRect();
@@ -413,23 +416,67 @@ window.addEventListener('pointerdown', e => {
             nodes[t].content.message.currentTime = 0;
         }
 
-        // Start hold timer
         holdTarget = nodes[index];
+        didHold = false;
+
+        // Start hold timer
         holdTimeout = setTimeout(() => {
-            // Trigger addingto on hold
-            addingto(holdTarget);
-            holdTarget = null; // reset
+            addingto(holdTarget); // immediate effect on hold
+            startmouse = 10;
+            didHold = true; // mark that a hold occurred
         }, HOLD_DELAY);
     }
 });
 
-window.addEventListener('pointerup', e => {
+window.addEventListener('pointerup', async e => {
     if (holdTimeout) {
         clearTimeout(holdTimeout);
         holdTimeout = null;
 
-        // If pointer was released before HOLD_DELAY → treat as quick tap
-        if (holdTarget) {
+        if (didHold && holdTarget) {
+            // AFTER HOLD → run your full audio block
+            // if (keysPressed[' ']) {
+                startmouse = 10;
+
+                if (adding == 1) {
+                    const audioResult = await stopRecording();
+                    if (!audioResult || !audioResult.audioBlob) {
+                        console.error("sendAudioObject: missing audioBlob", audioResult);
+                        holdTarget = null;
+                        return;
+                    }
+
+                    const audioBlob = audioResult.audioBlob;
+                    const url = URL.createObjectURL(audioBlob);
+                    const audio = new Audio();
+                    audio.src = url;
+                    audio.addEventListener('error', e => {
+                        console.error('Audio loading error:', e);
+                        URL.revokeObjectURL(url);
+                    });
+
+                    let nodei = new Node(0, {
+                        message: {},
+                        x: holdTarget.cap.x + (Math.random() - 0.5),
+                        y: holdTarget.cap.y + 4
+                    });
+
+                    nodei.content.message = audio;
+                    nodei.messageType = "audio";
+                    nodei.audioResult = audioResult;
+
+                    sendAudioObject(holdTarget.ID, audioResult);
+
+                    allaud.push(audioResult);
+                    holdTarget.children.push(nodei);
+                    nodes.push(nodei);
+                    console.log(nodei);
+
+                    holdTarget = {};
+                }
+            // }
+        } else if (holdTarget) {
+            // Quick tap → just play the node
             if (pausedex !== nodes.indexOf(holdTarget)) {
                 holdTarget.content.message.volume = 1;
                 holdTarget.content.message.play();
@@ -440,7 +487,6 @@ window.addEventListener('pointerup', e => {
         }
     }
 });
-
 
 
         window.addEventListener('pointermove', continued_stimuli);
@@ -1033,52 +1079,6 @@ window.addEventListener('pointerup', e => {
             let color1 = pix.data[iinde+2]  //blue
             worldcolor = `rgb(${color},${color2},${color1})` //indexed to buttons for click check in hash
         }
-    }
-    if(keysPressed[' ']){
-
-        startmouse = 10;
-if(adding == 1){
-  const audioResult = await stopRecording();
-  if (!audioResult || !audioResult.audioBlob) {
-    console.error("sendAudioObject: missing audioBlob", audioResult);
-    return;
-  }
-  
-  // Create Audio object for local playback
-  const audioBlob = audioResult.audioBlob;
-  const url = URL.createObjectURL(audioBlob);
-  const audio = new Audio();
-  audio.src = url;
-  
-  // Add error handling for audio
-  audio.addEventListener('error', (e) => {
-    console.error('Audio loading error:', e);
-    URL.revokeObjectURL(url);
-  });
-  
-  // Create node with Audio object for playback
-  let nodei = new Node(0, {
-    message: {},
-    x: addingOn.cap.x + (Math.random() - 0.5),
-    y: addingOn.cap.y + 4
-  });
-  
-  // Store the Audio object so .play() will work
-  nodei.content.message = audio;
-  nodei.messageType = "audio"; // Mark as audio message
-  nodei.audioResult = audioResult; // Keep original data if needed
-  
-  // Send to other clients
-  sendAudioObject(addingOn.ID, audioResult);
-   
-  // Store locally
-  allaud.push(audioResult);
-  addingOn.children.push(nodei);
-  nodes.push(nodei);
-  console.log(nodei);
-  addingOn = {}
-}
-
     }
 }
 
