@@ -952,8 +952,8 @@
     }
    async function main() {
 
-        off_context.clearRect(0,0,1280, 720) 
-        off_context.drawImage(canvas,offset.x, 0, 1280,720, 0, 0,1280,720)
+        off_context.clearRect(0,0,1280, 1280) 
+        off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
         canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
         // timespeed--
         timeon = 0
@@ -975,7 +975,7 @@
 
         if(!(movedMouse == 1 ||startmouse >0)){
         canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
-        canvas_context.drawImage(offcanvas,0, 0, 1280,720, 0, 0,1280,720)
+        canvas_context.drawImage(offcanvas,0, 0, 1280,1280, 0, 0,1280,1280)
         }else if(movedMouse == 1 ||startmouse >0){
         made--
             startmouse--
@@ -994,7 +994,7 @@
         }
         room.draw()
         if(keysPressed['f']){
-            pix = canvas_context.getImageData(0,0,1280,720) //total canvas pixel data
+            pix = canvas_context.getImageData(0,0,1280,1280) //total canvas pixel data
             let p = new Point(TIP_engine.x, TIP_engine.y) //pointer location for index
             let iinde = indexer(p,1280)  //location of pixel 
             let color = pix.data[iinde]  //red
@@ -1197,6 +1197,7 @@ async function sendAudioObject(id, file) {
           });
   
           node.content.message = audio; // store playable audio
+          allaud.push(audio)
           nodes[metadata.ID].children.push(node);
           nodes.push(node);
         }
