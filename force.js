@@ -1098,7 +1098,10 @@ if(adding == 1){
 
 
   // connect to the same WS as your server
-const ws = new WebSocket("ws://localhost:3000");
+  // Dynamic WebSocket URL that works locally and on Heroku
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const host = window.location.host; // Gets domain:port automatically
+const ws = new WebSocket(`${protocol}//${host}`);
 
 // when connected
 ws.onopen = () => {
