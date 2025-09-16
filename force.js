@@ -404,13 +404,17 @@
                     movedMouse = 1
                     for(let t = 0;t<nodes.length;t++){
                         nodes[t].content.message.volume = 0
+                        nodes[t].content.message.pause();   
+                        nodes[t].content.message.currentTime = 0;
                     }
                     addingto(nodes[index])
                 }else{
                     movedMouse = 1
                     // console.log(nodes, nodes[index], index)
                     for(let t = 0;t<nodes.length;t++){
-                        nodes[t].content.message.volume = 0
+                        nodes[t].content.message.volume = 0  
+                        nodes[t].content.message.pause();   
+                        nodes[t].content.message.currentTime = 0;
                     }
                     nodes[index].content.message.volume = 1
                     nodes[index].content.message.play()
