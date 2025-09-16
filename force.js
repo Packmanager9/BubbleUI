@@ -377,7 +377,10 @@
         document.addEventListener('keyup', (event) => {
             delete keysPressed[event.key]; //for removing key from list of pressed
         });
-        let rTarget = null; // track which node will be added to on release
+        
+        let holdTarget = null;
+let holdTimeout = null;
+const HOLD_DELAY = 300; // ms to count as a "hold"
 
 window.addEventListener('pointerdown', e => {
     FLEX_engine = canvas.getBoundingClientRect();
@@ -402,33 +405,43 @@ window.addEventListener('pointerdown', e => {
 
     if (index > -1) {
         movedMouse = 1;
+
+        // Reset all node audio
         for (let t = 0; t < nodes.length; t++) {
             nodes[t].content.message.volume = 0;
             nodes[t].content.message.pause();
             nodes[t].content.message.currentTime = 0;
         }
 
-        if (keysPressed['r']) {
-            // Hold down: just store the node for later
-            rTarget = nodes[index];
-        } else {
-            // Normal click behavior
-            if (pausedex !== index) {
-                nodes[index].content.message.volume = 1;
-                nodes[index].content.message.play();
-                nodes[index].touched = 1;
-            }
-            pausedex = index;
-        }
+        // Start hold timer
+        holdTarget = nodes[index];
+        holdTimeout = setTimeout(() => {
+            // Trigger addingto on hold
+            addingto(holdTarget);
+            holdTarget = null; // reset
+        }, HOLD_DELAY);
     }
 });
 
 window.addEventListener('pointerup', e => {
-    if (keysPressed['r'] && rTarget) {
-        addingto(rTarget);
-        rTarget = null; // reset
+    if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+
+        // If pointer was released before HOLD_DELAY → treat as quick tap
+        if (holdTarget) {
+            if (pausedex !== nodes.indexOf(holdTarget)) {
+                holdTarget.content.message.volume = 1;
+                holdTarget.content.message.play();
+                holdTarget.touched = 1;
+            }
+            pausedex = nodes.indexOf(holdTarget);
+            holdTarget = null;
+        }
     }
 });
+
+
 
         window.addEventListener('pointermove', continued_stimuli);
 
