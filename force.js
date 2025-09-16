@@ -418,6 +418,7 @@
                     }
                     nodes[index].content.message.volume = 1
                     nodes[index].content.message.play()
+                    nodes[index].touched = 1
 
                 }
     
@@ -477,7 +478,8 @@
     nodeid = 0
     class Node {
         constructor(type, content){
-            this.usercolor = 'orange'
+            this.usercolor = '#88bb00'
+            this.touched = 0
             this.ID = nodeid
             nodeid++
             this.body = {}
@@ -593,9 +595,12 @@
         }
             // console.log(this.hash)
 
-            // this.offset.x -= (Math.random()-.5)*2
-            // this.offset.y -=  (Math.random()-.5)*2
-            
+            if(this.touched == 0){
+
+                this.offset.x -= (Math.random()-.5)*1
+                this.offset.y -=  (Math.random()-.5)*1
+                
+            }
             // if(topnodes.includes(this)){
                     let l = ( this.cap.y-this.parent.cap.y)
 
@@ -685,9 +690,9 @@
             }
             this.offset.radius *=10
             // this.offset.radius = 12
-            this.offset.radius += Math.max(30 + (18-(radsnap.hypotenuse()/1))/10,12)
+            this.offset.radius += Math.max(30 + (10-(radsnap.hypotenuse()/1))/10,12)
             if(this.childing==1){
-                this.offset.radius+=15
+                this.offset.radius+=10
                 this.offset.radius /=11
             }else{
 
@@ -718,9 +723,9 @@
             // if(keysPressed['g']){
 
             if(node == addingOn){
-                circle.color = 'white'
+                circle.color = '#ffffff'
             }else{
-                circle.color  = node.usercolor
+                circle.color  = node.usercolor + (node.touched == 0 ? '':'a0')
             }
                 circle.draw()
             // }
@@ -944,7 +949,7 @@
         return (y * width + x) * 4;
     }
     let movedMouse= 1
-    let startmouse= 100
+    let startmouse= 999999999 //100
 
     let offset = {}
     offset.x = 0
@@ -988,7 +993,7 @@
         }else if(movedMouse == 1 ||startmouse >0){
         made--
             startmouse--
-            movedMouse = 0
+            // movedMouse = 0
         canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
         rect1.draw()
 
@@ -1048,12 +1053,13 @@ if(adding == 1){
   
   // Send to other clients
   sendAudioObject(addingOn.ID, audioResult);
-  
+   
   // Store locally
   allaud.push(audioResult);
   addingOn.children.push(nodei);
   nodes.push(nodei);
   console.log(nodei);
+  addingOn = {}
 }
 
     }
