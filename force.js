@@ -1197,7 +1197,7 @@ async function sendAudioObject(id, file) {
           });
   
           node.content.message = audio; // store playable audio
-          allaud.push(audio)
+        //   allaud.push(audio)
           nodes[metadata.ID].children.push(node);
           nodes.push(node);
         }
