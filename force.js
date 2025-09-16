@@ -377,61 +377,59 @@
         document.addEventListener('keyup', (event) => {
             delete keysPressed[event.key]; //for removing key from list of pressed
         });
-        window.addEventListener('pointerdown', e => {
-            FLEX_engine = canvas.getBoundingClientRect();
-            XS_engine = e.clientX - FLEX_engine.left;
-            YS_engine = e.clientY - FLEX_engine.top;
-            TIP_engine.x = XS_engine -offset.x
-            TIP_engine.y = YS_engine
-            TIP_engine.body = TIP_engine
+        let rTarget = null; // track which node will be added to on release
 
-            room.check(TIP_engine)
-            let l = new LineOP(TIP_engine, TIP_engine)
-            let min = 99999999
-            let index = -1
-            for(let t = 0;t<nodes.length;t++){
-                l.target = nodes[t].cap
-                let h = l.hypotenuse()
-                if(h <= min && h<=nodes[t].offset.radius){
-                    index = t
-                    min = h
-                }
+window.addEventListener('pointerdown', e => {
+    FLEX_engine = canvas.getBoundingClientRect();
+    XS_engine = e.clientX - FLEX_engine.left;
+    YS_engine = e.clientY - FLEX_engine.top;
+    TIP_engine.x = XS_engine - offset.x;
+    TIP_engine.y = YS_engine;
+    TIP_engine.body = TIP_engine;
+
+    room.check(TIP_engine);
+    let l = new LineOP(TIP_engine, TIP_engine);
+    let min = 99999999;
+    let index = -1;
+    for (let t = 0; t < nodes.length; t++) {
+        l.target = nodes[t].cap;
+        let h = l.hypotenuse();
+        if (h <= min && h <= nodes[t].offset.radius) {
+            index = t;
+            min = h;
+        }
+    }
+
+    if (index > -1) {
+        movedMouse = 1;
+        for (let t = 0; t < nodes.length; t++) {
+            nodes[t].content.message.volume = 0;
+            nodes[t].content.message.pause();
+            nodes[t].content.message.currentTime = 0;
+        }
+
+        if (keysPressed['r']) {
+            // Hold down: just store the node for later
+            rTarget = nodes[index];
+        } else {
+            // Normal click behavior
+            if (pausedex !== index) {
+                nodes[index].content.message.volume = 1;
+                nodes[index].content.message.play();
+                nodes[index].touched = 1;
             }
-            if(index > -1){
+            pausedex = index;
+        }
+    }
+});
 
-                if(keysPressed['r']){
+window.addEventListener('pointerup', e => {
+    if (keysPressed['r'] && rTarget) {
+        addingto(rTarget);
+        rTarget = null; // reset
+    }
+});
 
-                    movedMouse = 1
-                    for(let t = 0;t<nodes.length;t++){
-                        nodes[t].content.message.volume = 0
-                        nodes[t].content.message.pause();   
-                        nodes[t].content.message.currentTime = 0;
-                    }
-                    addingto(nodes[index])
-                }else{
-                    movedMouse = 1
-                    // console.log(nodes, nodes[index], index)
-                    for(let t = 0;t<nodes.length;t++){
-                        nodes[t].content.message.volume = 0  
-                        nodes[t].content.message.pause();   
-                        nodes[t].content.message.currentTime = 0;
-                    }
-                    if(pausedex == index){
-
-                    }else{
-                        nodes[index].content.message.volume = 1
-                        nodes[index].content.message.play()
-                        nodes[index].touched = 1
-                    }
-                    pausedex = index
-
-                }
-    
-            }
-
-
-            //for clicking mouse actions
-        });
         window.addEventListener('pointermove', continued_stimuli);
 
         window.addEventListener('pointerup', e => {
