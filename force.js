@@ -609,17 +609,17 @@
 
                         if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
-                            this.offset.y+=.4*this.layer
+                            this.offset.y+=.4*Math.sqrt(this.layer)
                         }else{
-                            this.offset.y-=.2*this.layer
+                            this.offset.y-=.2*Math.sqrt(this.layer)
     
                         }
                     }else{
                         if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
-                            this.offset.y+=0*this.layer
+                            this.offset.y+=0*Math.sqrt(this.layer)
                         }else{
-                            this.offset.y-=0*this.layer
+                            this.offset.y-=0*Math.sqrt(this.layer)
     
                         }
 
@@ -634,10 +634,10 @@
                     let l = this.children[t].cap.y-this.cap.y
                     if(l < Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
 
-                        this.children[t].offset.y+=.4*this.children[t].layer
+                        this.children[t].offset.y+=.4*Math.sqrt(this.children[t].layer)
                     }else{
 
-                        this.children[t].offset.y-=.2*this.children[t].layer
+                        this.children[t].offset.y-=.2*Math.sqrt(this.children[t].layer)
                     }
                 //     if(l.hypotenuse() > 60){
 
