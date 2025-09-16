@@ -597,8 +597,8 @@
 
             if(this.touched == 0){
 
-                this.offset.x -= (Math.random()-.5)*1
-                this.offset.y -=  (Math.random()-.5)*1
+                // this.offset.x -= (Math.random()-.5)*1
+                // this.offset.y -=  (Math.random()-.5)*1
                 
             }
             // if(topnodes.includes(this)){
