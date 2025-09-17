@@ -1415,9 +1415,12 @@ function audioBufferToWav(buffer) {
     }
 
 
-    if(nodes[Math.floor(timerz/20)%(nodes.length)].ID != 0){
+    if(timerz%20 == 0){
 
-        sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message, nodes[Math.floor(timerz/20)%(nodes.length)].usercolor,nodes[Math.floor(timerz/20)%(nodes.length)].cap.x, nodes[Math.floor(timerz/20)%(nodes.length)].cap.y, nodes[Math.floor(timerz/20)%(nodes.length)].width)
+        if(nodes[Math.floor(timerz/20)%(nodes.length)].ID != 0){
+
+            sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message, nodes[Math.floor(timerz/20)%(nodes.length)].usercolor,nodes[Math.floor(timerz/20)%(nodes.length)].cap.x, nodes[Math.floor(timerz/20)%(nodes.length)].cap.y, nodes[Math.floor(timerz/20)%(nodes.length)].width)
+        }
     }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
