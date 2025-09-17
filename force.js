@@ -1114,6 +1114,10 @@ window.addEventListener('pointerup', async e => {
    async function main() {
     // console.log(seenIDs)
     timerz++
+    if(Math.floor(timerz/20)%(nodes.length) > 0){
+
+        sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message)
+    }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
         canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
@@ -1151,10 +1155,6 @@ window.addEventListener('pointerup', async e => {
             // for(let t =0;t<nodes.length;t++){
             //     if(nodes[t].ID!=0){
 
-            if(Math.floor(timerz/20)%(nodes.length) > 0){
-
-                sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message)
-            }
                 // }
                 // }
          
