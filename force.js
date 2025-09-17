@@ -1171,7 +1171,7 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
     let rect1 = new Rectangle(-1000, 150, 12800, 40, "green")
     function indexer(point, width) {
         const x = Math.floor(point.x);
-        const y = Math.floor(point.y);
+        const y = Math.floor(point.y); 
         return (y * width + x) * 4;
     }
     function addingto(nodeon){
@@ -1719,6 +1719,7 @@ async function sendAudioObject(id, file) {
             if (seenIDs.includes(metadata.ID)) return; // skip if seen
             console.log('unseen')
             // console.log(nodes)
+
             let numbeee = trimVersion(metadata.ID) 
             console.log(numbeee)
             for (let t = 0; t < nodes.length; t++) {
