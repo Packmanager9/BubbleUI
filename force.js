@@ -7,7 +7,47 @@
             t += 9
         }
     }
+    let highs = []
+
+    let made = 0
     let seenIDs = []
+    let movedMouse= 1
+    let startmouse= 100 //100
+    let fileon = false
+
+    let timespeed = 20
+    let timeon = 0
+    let addingOn = {}
+    let adding = 0
+
+    let allaud = []
+    let topnodes = []
+    let nodes = []
+    function getAudioFile() {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "audio/*";
+            input.style.display = "none"; // hide it
+            document.body.appendChild(input);
+    
+            input.addEventListener("change", () => {
+                const file = input.files[0];
+                document.body.removeChild(input);
+                if (file) {
+                    resolve(file);
+                } else {
+                    reject(new Error("No file selected"));
+                }
+            });
+    
+            input.click(); // programmatically open file picker
+        });
+    }
+    
+    
+    let uploaded = 0
+    let timerz=0
     let offset = {}
     offset.x = 0
     let video_recorder 
@@ -382,6 +422,10 @@
         });
 
 
+
+
+
+
 ///here
 let holdTarget = null;
 let holdTimeout = null;
@@ -389,6 +433,8 @@ let didHold = false;
 const HOLD_DELAY = 250; // ms to count as a "hold"
 let stronko = '' 
 
+let st1 = -1
+let st2 = 0
 window.addEventListener('pointerdown', e => {
     FLEX_engine = canvas.getBoundingClientRect();
     XS_engine = e.clientX - FLEX_engine.left;
@@ -398,6 +444,15 @@ window.addEventListener('pointerdown', e => {
     TIP_engine.body = TIP_engine;
 
     room.check(TIP_engine);
+    if(rect1.isPointInside(TIP_engine)){
+       
+        if(fileon == false){
+            uploaded = 1
+        }else{
+
+            st1 = TIP_engine.x
+        }
+    }
     let l = new LineOP(TIP_engine, TIP_engine);
     let min = 99999999;
     let index = -1;
@@ -433,6 +488,25 @@ window.addEventListener('pointerdown', e => {
 });
 
 window.addEventListener('pointerup', async e => {
+
+    FLEX_engine = canvas.getBoundingClientRect();
+    XS_engine = e.clientX - FLEX_engine.left;
+    YS_engine = e.clientY - FLEX_engine.top;
+    TIP_engine.x = XS_engine - offset.x;
+    TIP_engine.y = YS_engine;
+    TIP_engine.body = TIP_engine;
+    if(rect1.isPointInside(TIP_engine)){
+
+        
+        console.log(1)
+        if(st1 > -1){
+
+            st2 = TIP_engine.x
+
+            makeNodeFromClip(st1, st2, rect1, coloron, fileon)
+            
+        }
+    }
     if (holdTimeout) {
         clearTimeout(holdTimeout);
         holdTimeout = null;
@@ -517,7 +591,49 @@ window.addEventListener('pointerup', async e => {
         }
     }
 });
+async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
+  if (st2 < st1) {
+    [st1, st2] = [st2, st1];
+  }
 
+  let high = new Rectangle(st1, rect1.y, st2 - st1, rect1.height, coloron + '60');
+  highs.push(high);
+
+  console.log("pixel range:", st1, st2);
+
+  // First decode the file to find its duration
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const arrayBuffer = await fileon.arrayBuffer();
+  const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+  const duration = decoded.duration;
+
+  // map pixel coordinates -> seconds
+  let srat1 = (st1 / 1280) * duration;
+  let srat2 = (st2 / 1280) * duration;
+
+  if (srat2 <= srat1) {
+    console.warn("Invalid slice", srat1, srat2);
+    return;
+  }
+
+  // now clip using the same file (File/Blob)
+  let sutie = await clipAudio(fileon, srat1, srat2);
+
+  let nodei = new Node(0, {
+    message: sutie,
+    x: (st1 + st2) / 2,
+    y: rect1.y + rect1.height
+  });
+
+  nodei.color = coloron;
+  nodei.ID = Math.floor((st1 + st2) / 2);
+
+  allaud.push(nodei.content.message);
+  topnodes.push(nodei);
+  nodes.push(nodei);
+}
+
+  
 
         window.addEventListener('pointermove', continued_stimuli);
 
@@ -554,8 +670,10 @@ window.addEventListener('pointerup', async e => {
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
     let offcanvas = document.getElementById('offcanvas') //getting canvas from document
+    let zffcanvas = document.getElementById('zffcanvas') //getting canvas from document
 
     let off_context =  offcanvas.getContext('2d');
+    let zff_context =  zffcanvas.getContext('2d');
     setUp(setup_canvas) // setting up canvas refrences, starting timer. 
 
     function getRandomColor() { // random color
@@ -795,7 +913,6 @@ window.addEventListener('pointerup', async e => {
         }
     }
 
-    let made = 0
     function childrenset(node){
         for(let t = 0;t<node.children.length;t++){
             console.log('s')
@@ -855,14 +972,11 @@ window.addEventListener('pointerup', async e => {
         }
     }
 
-    let allaud = []
-    let topnodes = []
-    let nodes = []
     let aud = new Audio()
     allaud.push(aud)
     aud.src = 'src.wav'
-    for(let t =0 ;t<1;t++){
-        let nodei = new Node(0, {'message':aud, 'x':500+Math.random(),'y':200})
+    for(let t =0 ;t<1;t++){ //basenode
+        let nodei = new Node(0, {'message':aud, 'x':640,'y':640})
         nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
     allaud.push(nodei.content.message)
 
@@ -1041,13 +1155,6 @@ window.addEventListener('pointerup', async e => {
         const y = Math.floor(point.y);
         return (y * width + x) * 4;
     }
-    let movedMouse= 1
-    let startmouse= 100 //100
-
-    let timespeed = 20
-    let timeon = 0
-    let addingOn = {}
-    let adding = 0
     function addingto(nodeon){
         addingOn=nodeon
         adding = 1
@@ -1109,11 +1216,202 @@ window.addEventListener('pointerup', async e => {
         }
       }
       
-      timerz=0
+
+      function funyk(){
+
+        getAudioFile().then(file => {
+            console.log("User selected file:", file);
+            ///file
+
+            fileon = file
+            rect1.color = 'red'
+          visualizeAudio(fileon, zffcanvas, rect1.x, rect1.y, rect1.width, rect1.height)
+  
+        }).catch(err => {
+            console.error(err);
+        });
+      }
+
+      async function visualizeAudio(file, canvas, x = 0, y = 0, width = canvas.width, height = canvas.height) {
+        const ctx = canvas.getContext("2d");
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Read file as ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Decode audio data
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const rawData = audioBuffer.getChannelData(0); // Use first channel
+        
+        const step = Math.ceil(rawData.length / width); // Number of samples per pixel
+        
+        // Clear the specified rectangle
+        ctx.clearRect(x, y, width, height);
+        
+        // Draw background for the rectangle
+        ctx.fillStyle = "#222";
+        ctx.fillRect(x, y, width, height);
+        
+        // Draw waveform
+        ctx.strokeStyle = "#0f0";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        
+        for (let i = 0; i < width; i++) {
+            const start = i * step;
+            const end = Math.min(start + step, rawData.length);
+            let min = 1.0;
+            let max = -1.0;
+            
+            for (let j = start; j < end; j++) {
+                const sample = rawData[j];
+                if (sample < min) min = sample;
+                if (sample > max) max = sample;
+            }
+            
+            const y1 = y + ((1 + min) / 2) * height;
+            const y2 = y + ((1 + max) / 2) * height;
+            
+            ctx.moveTo(x + i, y1);
+            ctx.lineTo(x + i, y2);
+        }
+        
+        ctx.stroke();
+    }
+    
+    // Usage example:
+    // const fileInput = document.querySelector("#audioFileInput");
+    // const canvas = document.querySelector("#waveformCanvas");
+    // fileInput.addEventListener("change", e => visualizeAudio(e.target.files[0], canvas, 50, 50, 400, 100));
+
+    async function clipAudio(fileOrAudio, startTime, endTime) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let arrayBuffer;
+      
+        // Case 1: <audio> element
+        if (fileOrAudio instanceof HTMLAudioElement) {
+          // fetch its source into an ArrayBuffer
+          const response = await fetch(fileOrAudio.src);
+          arrayBuffer = await response.arrayBuffer();
+        } 
+        // Case 2: File/Blob
+        else if (fileOrAudio instanceof Blob) {
+          arrayBuffer = await fileOrAudio.arrayBuffer();
+        } else {
+          throw new Error("clipAudio: expected File/Blob or <audio> element");
+        }
+      
+        // Decode audio
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+      
+        // Clamp times
+        startTime = Math.max(0, startTime);
+        endTime = Math.min(decoded.duration, endTime);
+        if (endTime <= startTime) {
+          throw new Error(`Invalid clip range: start=${startTime}, end=${endTime}`);
+        }
+      
+        const duration = endTime - startTime;
+        const sampleRate = decoded.sampleRate;
+        const channels = decoded.numberOfChannels;
+      
+        // Create buffer
+        const clipped = audioCtx.createBuffer(
+          channels,
+          Math.floor(duration * sampleRate),
+          sampleRate
+        );
+      
+        // Copy samples
+        for (let ch = 0; ch < channels; ch++) {
+          const channelData = decoded.getChannelData(ch).subarray(
+            Math.floor(startTime * sampleRate),
+            Math.floor(endTime * sampleRate)
+          );
+          clipped.copyToChannel(channelData, ch);
+        }
+      
+        // Convert back to playable Audio element
+        const wavBlob = audioBufferToWav(clipped);
+        const url = URL.createObjectURL(wavBlob);
+        return new Audio(url);
+      }
+      
+// helper: convert AudioBuffer → WAV Blob
+function audioBufferToWav(buffer) {
+  const numOfChan = buffer.numberOfChannels,
+    length = buffer.length * numOfChan * 2 + 44,
+    bufferArray = new ArrayBuffer(length),
+    view = new DataView(bufferArray),
+    channels = [],
+    sampleRate = buffer.sampleRate;
+
+  // write WAV header
+  function setUint16(data, offset) {
+    view.setUint16(offset, data, true);
+  }
+  function setUint32(data, offset) {
+    view.setUint32(offset, data, true);
+  }
+  let pos = 0;
+
+  setUint32(0x46464952, pos); // "RIFF"
+  pos += 4;
+  setUint32(length - 8, pos);
+  pos += 4;
+  setUint32(0x45564157, pos); // "WAVE"
+  pos += 4;
+  setUint32(0x20746d66, pos); // "fmt "
+  pos += 4;
+  setUint32(16, pos);
+  pos += 4;
+  setUint16(1, pos);
+  pos += 2;
+  setUint16(numOfChan, pos);
+  pos += 2;
+  setUint32(sampleRate, pos);
+  pos += 4;
+  setUint32(sampleRate * 2 * numOfChan, pos);
+  pos += 4;
+  setUint16(numOfChan * 2, pos);
+  pos += 2;
+  setUint16(16, pos);
+  pos += 2;
+  setUint32(0x61746164, pos); // "data"
+  pos += 4;
+  setUint32(length - pos - 4, pos);
+  pos += 4;
+
+  // write interleaved samples
+  for (let i = 0; i < buffer.numberOfChannels; i++)
+    channels.push(buffer.getChannelData(i));
+
+  let offset = 0;
+  while (offset < buffer.length) {
+    for (let i = 0; i < numOfChan; i++) {
+      let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      view.setInt16(pos, sample, true);
+      pos += 2;
+    }
+    offset++;
+  }
+
+  return new Blob([bufferArray], { type: "audio/wav" });
+}
+
 
    async function main() {
     // console.log(seenIDs)
     timerz++
+
+
+    if(uploaded == 1){
+         uploaded = 0
+         funyk()
+    }
+
+
     if(Math.floor(timerz/30)%(nodes.length) > 0){
 
         sendAudioElement(nodes[Math.floor(timerz/30)%(nodes.length)].ID, nodes[Math.floor(timerz/30)%(nodes.length)].content.message, nodes[Math.floor(timerz/30)%(nodes.length)].usercolor)
@@ -1122,7 +1420,7 @@ window.addEventListener('pointerup', async e => {
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
         canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
         // timespeed--
-        timeon = 0
+        timeon = 0 
         if(timespeed<=0){
             timespeed = 20
             canvas_context.translate(-1, 0)
@@ -1145,10 +1443,16 @@ window.addEventListener('pointerup', async e => {
         }else if(movedMouse == 1 ||startmouse >0){
         made--
             startmouse--
-            movedMouse = 0
+            // movedMouse = 0
         canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
         rect1.draw()
+        if(fileon != false){
+            canvas_context.drawImage(zffcanvas,0, 0, 1280,1280, 0, 0,1280,1280)
 
+        }
+        for(let t =0 ;t<highs.length;t++){
+            highs[t].draw()
+        }
 
         // if(timerz >= 1000){
             // timerz=0
@@ -1174,16 +1478,16 @@ window.addEventListener('pointerup', async e => {
                     // seenIDs.push(nodes[t].ID)
                 }
         }
-        room.draw()
-        if(keysPressed['f']){
-            pix = canvas_context.getImageData(0,0,1280,1280) //total canvas pixel data
-            let p = new Point(TIP_engine.x, TIP_engine.y) //pointer location for index
-            let iinde = indexer(p,1280)  //location of pixel 
-            let color = pix.data[iinde]  //red
-            let color2 = pix.data[iinde+1] //green
-            let color1 = pix.data[iinde+2]  //blue
-            worldcolor = `rgb(${color},${color2},${color1})` //indexed to buttons for click check in hash
-        }
+        // room.draw()
+        // if(keysPressed['f']){
+        //     pix = canvas_context.getImageData(0,0,1280,1280) //total canvas pixel data
+        //     let p = new Point(TIP_engine.x, TIP_engine.y) //pointer location for index
+        //     let iinde = indexer(p,1280)  //location of pixel 
+        //     let color = pix.data[iinde]  //red
+        //     let color2 = pix.data[iinde+1] //green
+        //     let color1 = pix.data[iinde+2]  //blue
+        //     worldcolor = `rgb(${color},${color2},${color1})` //indexed to buttons for click check in hash
+        // }
     }
 }
 
