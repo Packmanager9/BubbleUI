@@ -1222,7 +1222,7 @@ async function sendAudioObject(id, file) {
           node.messageType = "text";
           nodes[d.ID].children.push(node);
           nodes.push(node);
-  
+          startmouse= 100
         } else if (data instanceof ArrayBuffer) {
           // Handle combined metadata + audio
           const view = new DataView(data);
@@ -1257,6 +1257,7 @@ async function sendAudioObject(id, file) {
           allaud.push(node.content.message)
           nodes[metadata.ID].children.push(node);
           nodes.push(node);
+          startmouse= 100
         }
       } catch (e) {
         console.error("Failed to handle message:", e);
