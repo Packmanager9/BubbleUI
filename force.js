@@ -1208,7 +1208,7 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
           const audioBuffer = await audioBlob.arrayBuffer();
       
           // Encode metadata
-          console.log(id)
+          console.log(id) 
           const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorin+(width>-1?'':''), resend:1, x:xin, y:yin,width:width});
           const encoder = new TextEncoder();
           const metadataBytes = encoder.encode(metadata);
@@ -1415,10 +1415,10 @@ function audioBufferToWav(buffer) {
     }
 
 
-    // if(Math.floor(timerz/100)%(nodes.length) > 0){
+    if(nodes[Math.floor(timerz/20)%(nodes.length)].ID != 0){
 
         sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message, nodes[Math.floor(timerz/20)%(nodes.length)].usercolor,nodes[Math.floor(timerz/20)%(nodes.length)].cap.x, nodes[Math.floor(timerz/20)%(nodes.length)].cap.y, nodes[Math.floor(timerz/20)%(nodes.length)].width)
-    // }
+    }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
         canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
