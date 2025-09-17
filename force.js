@@ -1,519 +1,519 @@
 // const { TKGrid } = require("./astar_tk")
 
-   const squaretable = {} 
-    for (let t = 0; t < 10000000; t++) {
-        squaretable[`${t}`] = Math.sqrt(t)
-        if (t > 999) {
-            t += 9
-        }
+const squaretable = {}
+for (let t = 0; t < 10000000; t++) {
+    squaretable[`${t}`] = Math.sqrt(t)
+    if (t > 999) {
+        t += 9
     }
-    let highs = []
+}
+let highs = []
 
-    let made = 0
-    let seenIDs = []
-    let movedMouse= 1
-    let startmouse= 100 //100
-    let fileon = false
+let made = 0
+let seenIDs = []
+let movedMouse = 1
+let startmouse = 100 //100
+let fileon = false
 
-    let timespeed = 20
-    let timeon = 0
-    let addingOn = {}
-    let adding = 0
+let timespeed = 20
+let timeon = 0
+let addingOn = {}
+let adding = 0
 
-    let allaud = []
-    let topnodes = []
-    let nodes = []
-    function getAudioFile() {
-        return new Promise((resolve, reject) => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "audio/*";
-            input.style.display = "none"; // hide it
-            document.body.appendChild(input);
-    
-            input.addEventListener("change", () => {
-                const file = input.files[0];
-                document.body.removeChild(input);
-                if (file) {
-                    resolve(file);
-                } else {
-                    reject(new Error("No file selected"));
-                }
-            });
-    
-            input.click(); // programmatically open file picker
+let allaud = []
+let topnodes = []
+let nodes = []
+function getAudioFile() {
+    return new Promise((resolve, reject) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "audio/*";
+        input.style.display = "none"; // hide it
+        document.body.appendChild(input);
+
+        input.addEventListener("change", () => {
+            const file = input.files[0];
+            document.body.removeChild(input);
+            if (file) {
+                resolve(file);
+            } else {
+                reject(new Error("No file selected"));
+            }
         });
-    }
-    
-    
-    let uploaded = 0
-    let timerz=0
-    let offset = {}
-    offset.x = 0
-    let video_recorder 
-    let recording = 0
-    const gamepadAPI = {
-        controller: {},
-        turbo: true,
-        connect: function (evt) {
-            if (navigator.getGamepads()[0] != null) {
-                gamepadAPI.controller = navigator.getGamepads()[0]
-                gamepadAPI.turbo = true;
-            } else if (navigator.getGamepads()[1] != null) {
-                gamepadAPI.controller = navigator.getGamepads()[0]
-                gamepadAPI.turbo = true;
-            } else if (navigator.getGamepads()[2] != null) {
-                gamepadAPI.controller = navigator.getGamepads()[0]
-                gamepadAPI.turbo = true;
-            } else if (navigator.getGamepads()[3] != null) {
-                gamepadAPI.controller = navigator.getGamepads()[0]
-                gamepadAPI.turbo = true;
-            }
-            for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i] === null) {
-                    continue;
-                }
-                if (!gamepads[i].connected) {
-                    continue;
-                }
-            }
-        },
-        disconnect: function (evt) {
-            gamepadAPI.turbo = false;
-            delete gamepadAPI.controller;
-        },
-        update: function () {
+
+        input.click(); // programmatically open file picker
+    });
+}
+
+
+let uploaded = 0
+let timerz = 0
+let offset = {}
+offset.x = 0
+let video_recorder
+let recording = 0
+const gamepadAPI = {
+    controller: {},
+    turbo: true,
+    connect: function (evt) {
+        if (navigator.getGamepads()[0] != null) {
             gamepadAPI.controller = navigator.getGamepads()[0]
-            gamepadAPI.buttonsCache = [];// clear the buttons cache
-            for (var k = 0; k < gamepadAPI.buttonsStatus.length; k++) {// move the buttons status from the previous frame to the cache
-                gamepadAPI.buttonsCache[k] = gamepadAPI.buttonsStatus[k];
+            gamepadAPI.turbo = true;
+        } else if (navigator.getGamepads()[1] != null) {
+            gamepadAPI.controller = navigator.getGamepads()[0]
+            gamepadAPI.turbo = true;
+        } else if (navigator.getGamepads()[2] != null) {
+            gamepadAPI.controller = navigator.getGamepads()[0]
+            gamepadAPI.turbo = true;
+        } else if (navigator.getGamepads()[3] != null) {
+            gamepadAPI.controller = navigator.getGamepads()[0]
+            gamepadAPI.turbo = true;
+        }
+        for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i] === null) {
+                continue;
             }
-            gamepadAPI.buttonsStatus = [];// clear the buttons status
-            var c = gamepadAPI.controller || {}; // get the gamepad object
-            var pressed = [];
-            if (c.buttons) {
-                for (var b = 0, t = c.buttons.length; b < t; b++) {// loop through buttons and push the pressed ones to the array
-                    if (c.buttons[b].pressed) {
-                        pressed.push(gamepadAPI.buttons[b]);
-                    }
+            if (!gamepads[i].connected) {
+                continue;
+            }
+        }
+    },
+    disconnect: function (evt) {
+        gamepadAPI.turbo = false;
+        delete gamepadAPI.controller;
+    },
+    update: function () {
+        gamepadAPI.controller = navigator.getGamepads()[0]
+        gamepadAPI.buttonsCache = [];// clear the buttons cache
+        for (var k = 0; k < gamepadAPI.buttonsStatus.length; k++) {// move the buttons status from the previous frame to the cache
+            gamepadAPI.buttonsCache[k] = gamepadAPI.buttonsStatus[k];
+        }
+        gamepadAPI.buttonsStatus = [];// clear the buttons status
+        var c = gamepadAPI.controller || {}; // get the gamepad object
+        var pressed = [];
+        if (c.buttons) {
+            for (var b = 0, t = c.buttons.length; b < t; b++) {// loop through buttons and push the pressed ones to the array
+                if (c.buttons[b].pressed) {
+                    pressed.push(gamepadAPI.buttons[b]);
                 }
             }
-            var axes = [];
-            if (c.axes) {
-                for (var a = 0, x = c.axes.length; a < x; a++) {// loop through axes and push their values to the array
-                    axes.push(c.axes[a].toFixed(2));
-                }
+        }
+        var axes = [];
+        if (c.axes) {
+            for (var a = 0, x = c.axes.length; a < x; a++) {// loop through axes and push their values to the array
+                axes.push(c.axes[a].toFixed(2));
             }
-            gamepadAPI.axesStatus = axes;// assign received values
-            gamepadAPI.buttonsStatus = pressed;
-            // //console.log(pressed); // return buttons for debugging purposes
-            return pressed;
-        },
-        buttonPressed: function (button, hold) {
-            var newPress = false;
-            for (var i = 0, s = gamepadAPI.buttonsStatus.length; i < s; i++) {// loop through pressed buttons
-                if (gamepadAPI.buttonsStatus[i] == button) {// if we found the button we're looking for...
-                    newPress = true;// set the boolean variable to true
-                    if (!hold) {// if we want to check the single press
-                        for (var j = 0, p = gamepadAPI.buttonsCache.length; j < p; j++) {// loop through the cached states from the previous frame
-                            if (gamepadAPI.buttonsCache[j] == button) { // if the button was already pressed, ignore new press
-                                newPress = false;
-                            }
+        }
+        gamepadAPI.axesStatus = axes;// assign received values
+        gamepadAPI.buttonsStatus = pressed;
+        // //console.log(pressed); // return buttons for debugging purposes
+        return pressed;
+    },
+    buttonPressed: function (button, hold) {
+        var newPress = false;
+        for (var i = 0, s = gamepadAPI.buttonsStatus.length; i < s; i++) {// loop through pressed buttons
+            if (gamepadAPI.buttonsStatus[i] == button) {// if we found the button we're looking for...
+                newPress = true;// set the boolean variable to true
+                if (!hold) {// if we want to check the single press
+                    for (var j = 0, p = gamepadAPI.buttonsCache.length; j < p; j++) {// loop through the cached states from the previous frame
+                        if (gamepadAPI.buttonsCache[j] == button) { // if the button was already pressed, ignore new press
+                            newPress = false;
                         }
                     }
                 }
             }
-            return newPress;
-        },
-        buttons: [
-            'A', 'B', 'X', 'Y', 'LB', 'RB', 'Left-Trigger', 'Right-Trigger', 'Back', 'Start', 'Axis-Left', 'Axis-Right', 'DPad-Up', 'DPad-Down', 'DPad-Left', 'DPad-Right', "Power"
-        ],
-        buttonsCache: [],
-        buttonsStatus: [],
-        axesStatus: []
-    };
-    let canvas
-    let canvas_context
-    let keysPressed = {}
-    let FLEX_engine
-    let TIP_engine = {}
-    TIP_engine.x = 10000
-    TIP_engine.y = 10000
-    let XS_engine
-    let YS_engine
-    class Point {
-        constructor(x, y) {
-            this.x = x
-            this.y = y
-            this.radius = 0
         }
-        pointDistance(point) {
-            return (new LineOP(this, point, "transparent", 0)).hypotenuse()
+        return newPress;
+    },
+    buttons: [
+        'A', 'B', 'X', 'Y', 'LB', 'RB', 'Left-Trigger', 'Right-Trigger', 'Back', 'Start', 'Axis-Left', 'Axis-Right', 'DPad-Up', 'DPad-Down', 'DPad-Left', 'DPad-Right', "Power"
+    ],
+    buttonsCache: [],
+    buttonsStatus: [],
+    axesStatus: []
+};
+let canvas
+let canvas_context
+let keysPressed = {}
+let FLEX_engine
+let TIP_engine = {}
+TIP_engine.x = 10000
+TIP_engine.y = 10000
+let XS_engine
+let YS_engine
+class Point {
+    constructor(x, y) {
+        this.x = x
+        this.y = y
+        this.radius = 0
+    }
+    pointDistance(point) {
+        return (new LineOP(this, point, "transparent", 0)).hypotenuse()
+    }
+}
+class LineOP {
+    constructor(object, target, color, width) {
+        this.object = object
+        this.target = target
+        this.color = color
+        this.width = width
+    }
+    squareDistance() {
+        let xdif = this.object.x - this.target.x
+        let ydif = this.object.y - this.target.y
+        let squareDistance = (xdif * xdif) + (ydif * ydif)
+        return squareDistance
+    }
+    hypotenuse() {
+        let xdif = this.object.x - this.target.x
+        let ydif = this.object.y - this.target.y
+        let hypotenuse = (xdif * xdif) + (ydif * ydif)
+        if (hypotenuse < 10000000 - 1) {
+            if (hypotenuse > 1000) {
+                return squaretable[`${Math.round(10 * Math.round((hypotenuse * .1)))}`]
+            } else {
+                return squaretable[`${Math.round(hypotenuse)}`]
+            }
+        } else {
+            return Math.sqrt(hypotenuse)
         }
     }
-    class LineOP {
-        constructor(object, target, color, width) {
-            this.object = object
-            this.target = target
-            this.color = color
-            this.width = width
-        }
-        squareDistance() {
-            let xdif = this.object.x - this.target.x
-            let ydif = this.object.y - this.target.y
-            let squareDistance = (xdif * xdif) + (ydif * ydif)
-            return squareDistance
-        }
-        hypotenuse() {
-            let xdif = this.object.x - this.target.x
-            let ydif = this.object.y - this.target.y
-            let hypotenuse = (xdif * xdif) + (ydif * ydif)
-            if (hypotenuse < 10000000 - 1) {
-                if (hypotenuse > 1000) {
-                    return squaretable[`${Math.round(10 * Math.round((hypotenuse * .1)))}`]
-                } else {
-                    return squaretable[`${Math.round(hypotenuse)}`]
+    angle() {
+        return Math.atan2(this.object.y - this.target.y, this.object.x - this.target.x)
+    }
+    draw() {
+        let linewidthstorage = canvas_context.lineWidth
+        canvas_context.strokeStyle = this.color
+        canvas_context.lineWidth = this.width
+        canvas_context.beginPath()
+        canvas_context.moveTo(this.object.x, this.object.y)
+        canvas_context.lineTo(this.target.x, this.target.y)
+        canvas_context.stroke()
+        canvas_context.lineWidth = linewidthstorage
+    }
+}
+class Rectangle {
+    constructor(x, y, width, height, color, fill = 1, stroke = 0, strokeWidth = 1) {
+        this.x = x
+        this.y = y
+        this.height = height
+        this.width = width
+        this.color = color
+        this.xmom = 0
+        this.ymom = 0
+        this.stroke = stroke
+        this.strokeWidth = strokeWidth
+        this.fill = fill
+    }
+    draw() {
+        canvas_context.fillStyle = this.color
+        canvas_context.fillRect(this.x, this.y, this.width, this.height)
+    }
+    move() {
+        this.x += this.xmom
+        this.y += this.ymom
+    }
+    isPointInside(point) {
+        if (point.x >= this.x) {
+            if (point.y >= this.y) {
+                if (point.x <= this.x + this.width) {
+                    if (point.y <= this.y + this.height) {
+                        return true
+                    }
                 }
-            } else {
-                return Math.sqrt(hypotenuse)
             }
         }
-        angle() {
-            return Math.atan2(this.object.y - this.target.y, this.object.x - this.target.x)
-        }
-        draw() {
-            let linewidthstorage = canvas_context.lineWidth
-            canvas_context.strokeStyle = this.color
-            canvas_context.lineWidth = this.width
-            canvas_context.beginPath()
-            canvas_context.moveTo(this.object.x, this.object.y)
-            canvas_context.lineTo(this.target.x, this.target.y)
-            canvas_context.stroke()
-            canvas_context.lineWidth = linewidthstorage
-        }
+        return false
     }
-    class Rectangle {
-        constructor(x, y, width, height, color, fill = 1, stroke = 0, strokeWidth = 1) {
-            this.x = x
-            this.y = y
-            this.height = height
-            this.width = width
-            this.color = color
-            this.xmom = 0
-            this.ymom = 0
-            this.stroke = stroke
-            this.strokeWidth = strokeWidth
-            this.fill = fill
+    doesPerimeterTouch(point) {
+        if (point.x + point.radius >= this.x) {
+            if (point.y + point.radius >= this.y) {
+                if (point.x - point.radius <= this.x + this.width) {
+                    if (point.y - point.radius <= this.y + this.height) {
+                        return true
+                    }
+                }
+            }
         }
-        draw() {
+        return false
+    }
+}
+class Circle {
+    constructor(x, y, radius, color, xmom = 0, ymom = 0, friction = 1, reflect = 0, strokeWidth = 0, strokeColor = "transparent") {
+        this.x = x
+        this.y = y
+        this.radius = radius
+        this.color = color
+        this.xmom = xmom
+        this.ymom = ymom
+        this.friction = friction
+        this.reflect = reflect
+        this.strokeWidth = strokeWidth
+        this.strokeColor = strokeColor
+        this.dragged = -1
+    }
+    draw() {
+        if (this.dragged == 1) {
+            console.log(2)
+            this.x = TIP_engine.x
+            this.y = TIP_engine.y
+            if (!room.isPointInside(this)) {
+                let l = new LineOP(this, room.center)
+                let a = l.angle()
+                this.x -= (l.hypotenuse() / 20) * Math.cos(a)
+                this.y -= (l.hypotenuse() / 20) * Math.sin(a)
+                if (room.isPointInside(this)) {
+                    this.dragged *= -1
+                }
+            }
+        }
+        canvas_context.lineWidth = 2
+        canvas_context.strokeStyle = "black"
+        canvas_context.beginPath();
+        if (this.radius > 0) {
+            canvas_context.arc(this.x, this.y, this.radius, 0, (Math.PI * 2), true)
             canvas_context.fillStyle = this.color
-            canvas_context.fillRect(this.x, this.y, this.width, this.height)
-        }
-        move() {
-            this.x += this.xmom
-            this.y += this.ymom
-        }
-        isPointInside(point) {
-            if (point.x >= this.x) {
-                if (point.y >= this.y) {
-                    if (point.x <= this.x + this.width) {
-                        if (point.y <= this.y + this.height) {
-                            return true
-                        }
-                    }
-                }
-            }
-            return false
-        }
-        doesPerimeterTouch(point) {
-            if (point.x + point.radius >= this.x) {
-                if (point.y + point.radius >= this.y) {
-                    if (point.x - point.radius <= this.x + this.width) {
-                        if (point.y - point.radius <= this.y + this.height) {
-                            return true
-                        }
-                    }
-                }
-            }
-            return false
+            canvas_context.fill()
+            canvas_context.stroke();
+        } else {
+            //console.l\og("The circle is below a radius of 0, and has not been drawn. The circle is:", this)
         }
     }
-    class Circle {
-        constructor(x, y, radius, color, xmom = 0, ymom = 0, friction = 1, reflect = 0, strokeWidth = 0, strokeColor = "transparent") {
-            this.x = x
-            this.y = y
-            this.radius = radius
-            this.color = color
-            this.xmom = xmom
-            this.ymom = ymom
-            this.friction = friction
-            this.reflect = reflect
-            this.strokeWidth = strokeWidth
-            this.strokeColor = strokeColor
-            this.dragged = -1
-        }
-        draw() {
-            if(this.dragged==1){
-                console.log(2)
-                this.x = TIP_engine.x 
-                this.y  = TIP_engine.y 
-                if(!room.isPointInside(this)){
-                    let l = new LineOP(this,room.center)
-                    let a = l.angle()
-                    this.x-=(l.hypotenuse()/20)*Math.cos(a)
-                    this.y-=(l.hypotenuse()/20)*Math.sin(a)
-                    if(room.isPointInside(this)){
-                        this.dragged*=-1
-                    }
+    move() {
+        if (this.reflect == 1) {
+            if (this.x + this.radius > canvas.width) {
+                if (this.xmom > 0) {
+                    this.xmom *= -1
                 }
             }
-            canvas_context.lineWidth = 2
-            canvas_context.strokeStyle = "black"
-            canvas_context.beginPath();
-            if (this.radius > 0) {
-                canvas_context.arc(this.x, this.y, this.radius, 0, (Math.PI * 2), true)
-                canvas_context.fillStyle = this.color
-                canvas_context.fill()
-                canvas_context.stroke();
+            if (this.y + this.radius > canvas.height) {
+                if (this.ymom > 0) {
+                    this.ymom *= -1
+                }
+            }
+            if (this.x - this.radius < 0) {
+                if (this.xmom < 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y - this.radius < 0) {
+                if (this.ymom < 0) {
+                    this.ymom *= -1
+                }
+            }
+        }
+        this.x += this.xmom
+        this.y += this.ymom
+    }
+    unmove() {
+        if (this.reflect == 1) {
+            if (this.x + this.radius > canvas.width) {
+                if (this.xmom > 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y + this.radius > canvas.height) {
+                if (this.ymom > 0) {
+                    this.ymom *= -1
+                }
+            }
+            if (this.x - this.radius < 0) {
+                if (this.xmom < 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y - this.radius < 0) {
+                if (this.ymom < 0) {
+                    this.ymom *= -1
+                }
+            }
+        }
+        this.x -= this.xmom
+        this.y -= this.ymom
+    }
+    frictiveMove() {
+        if (this.reflect == 1) {
+            if (this.x + this.radius > canvas.width) {
+                if (this.xmom > 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y + this.radius > canvas.height) {
+                if (this.ymom > 0) {
+                    this.ymom *= -1
+                }
+            }
+            if (this.x - this.radius < 0) {
+                if (this.xmom < 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y - this.radius < 0) {
+                if (this.ymom < 0) {
+                    this.ymom *= -1
+                }
+            }
+        }
+        this.x += this.xmom
+        this.y += this.ymom
+        this.xmom *= this.friction
+        this.ymom *= this.friction
+    }
+    frictiveunMove() {
+        if (this.reflect == 1) {
+            if (this.x + this.radius > canvas.width) {
+                if (this.xmom > 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y + this.radius > canvas.height) {
+                if (this.ymom > 0) {
+                    this.ymom *= -1
+                }
+            }
+            if (this.x - this.radius < 0) {
+                if (this.xmom < 0) {
+                    this.xmom *= -1
+                }
+            }
+            if (this.y - this.radius < 0) {
+                if (this.ymom < 0) {
+                    this.ymom *= -1
+                }
+            }
+        }
+        this.xmom /= this.friction
+        this.ymom /= this.friction
+        this.x -= this.xmom
+        this.y -= this.ymom
+    }
+    isPointInside(point) {
+        this.areaY = point.y - this.y
+        this.areaX = point.x - this.x
+        if (((this.areaX * this.areaX) + (this.areaY * this.areaY)) <= (this.radius * this.radius)) {
+            return true
+        }
+        return false
+    }
+    doesPerimeterTouch(point) {
+        this.areaY = point.y - this.y
+        this.areaX = point.x - this.x
+        if (((this.areaX * this.areaX) + (this.areaY * this.areaY)) <= ((this.radius + point.radius) * (this.radius + point.radius))) {
+            return true
+        }
+        return false
+    }
+}
+function setUp(canvas_pass, style = "#888888") {
+    canvas = canvas_pass
+    canvas_context = canvas.getContext('2d');
+    canvas.style.background = style
+    window.setInterval(function () {
+        main()
+    }, 5)
+    document.addEventListener('keydown', (event) => {
+        // if(event.key  == ' '){
+        event.preventDefault()
+        // }
+        keysPressed[event.key] = true; //adds key to list of pressed
+    });
+    document.addEventListener('keyup', (event) => {
+        delete keysPressed[event.key]; //for removing key from list of pressed
+    });
+
+
+
+
+
+
+    ///here
+    let holdTarget = null;
+    let holdTimeout = null;
+    let didHold = false;
+    const HOLD_DELAY = 250; // ms to count as a "hold"
+    let stronko = ''
+
+    let st1 = -1
+    let st2 = 0
+    window.addEventListener('pointerdown', e => {
+        FLEX_engine = canvas.getBoundingClientRect();
+        XS_engine = e.clientX - FLEX_engine.left;
+        YS_engine = e.clientY - FLEX_engine.top;
+        TIP_engine.x = XS_engine - offset.x;
+        TIP_engine.y = YS_engine;
+        TIP_engine.body = TIP_engine;
+
+        room.check(TIP_engine);
+        if (rect1.isPointInside(TIP_engine)) {
+
+            if (fileon == false) {
+                uploaded = 1
             } else {
-                //console.l\og("The circle is below a radius of 0, and has not been drawn. The circle is:", this)
+
+                st1 = TIP_engine.x
             }
         }
-        move() {
-            if (this.reflect == 1) {
-                if (this.x + this.radius > canvas.width) {
-                    if (this.xmom > 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y + this.radius > canvas.height) {
-                    if (this.ymom > 0) {
-                        this.ymom *= -1
-                    }
-                }
-                if (this.x - this.radius < 0) {
-                    if (this.xmom < 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y - this.radius < 0) {
-                    if (this.ymom < 0) {
-                        this.ymom *= -1
-                    }
-                }
-            }
-            this.x += this.xmom
-            this.y += this.ymom
-        }
-        unmove() {
-            if (this.reflect == 1) {
-                if (this.x + this.radius > canvas.width) {
-                    if (this.xmom > 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y + this.radius > canvas.height) {
-                    if (this.ymom > 0) {
-                        this.ymom *= -1
-                    }
-                }
-                if (this.x - this.radius < 0) {
-                    if (this.xmom < 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y - this.radius < 0) {
-                    if (this.ymom < 0) {
-                        this.ymom *= -1
-                    }
-                }
-            }
-            this.x -= this.xmom
-            this.y -= this.ymom
-        }
-        frictiveMove() {
-            if (this.reflect == 1) {
-                if (this.x + this.radius > canvas.width) {
-                    if (this.xmom > 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y + this.radius > canvas.height) {
-                    if (this.ymom > 0) {
-                        this.ymom *= -1
-                    }
-                }
-                if (this.x - this.radius < 0) {
-                    if (this.xmom < 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y - this.radius < 0) {
-                    if (this.ymom < 0) {
-                        this.ymom *= -1
-                    }
-                }
-            }
-            this.x += this.xmom
-            this.y += this.ymom
-            this.xmom *= this.friction
-            this.ymom *= this.friction
-        }
-        frictiveunMove() {
-            if (this.reflect == 1) {
-                if (this.x + this.radius > canvas.width) {
-                    if (this.xmom > 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y + this.radius > canvas.height) {
-                    if (this.ymom > 0) {
-                        this.ymom *= -1
-                    }
-                }
-                if (this.x - this.radius < 0) {
-                    if (this.xmom < 0) {
-                        this.xmom *= -1
-                    }
-                }
-                if (this.y - this.radius < 0) {
-                    if (this.ymom < 0) {
-                        this.ymom *= -1
-                    }
-                }
-            }
-            this.xmom /= this.friction
-            this.ymom /= this.friction
-            this.x -= this.xmom
-            this.y -= this.ymom
-        }
-        isPointInside(point) {
-            this.areaY = point.y - this.y
-            this.areaX = point.x - this.x
-            if (((this.areaX * this.areaX) + (this.areaY * this.areaY)) <= (this.radius * this.radius)) {
-                return true
-            }
-            return false
-        }
-        doesPerimeterTouch(point) {
-            this.areaY = point.y - this.y
-            this.areaX = point.x - this.x
-            if (((this.areaX * this.areaX) + (this.areaY * this.areaY)) <= ((this.radius + point.radius) * (this.radius + point.radius))) {
-                return true
-            }
-            return false
-        }
-    } 
-    function setUp(canvas_pass, style = "#888888") {
-        canvas = canvas_pass
-        canvas_context = canvas.getContext('2d');
-        canvas.style.background = style
-        window.setInterval(function () {
-            main()
-        }, 5)
-        document.addEventListener('keydown', (event) => {
-            // if(event.key  == ' '){
-                event.preventDefault()
-            // }
-            keysPressed[event.key] = true; //adds key to list of pressed
-        });
-        document.addEventListener('keyup', (event) => {
-            delete keysPressed[event.key]; //for removing key from list of pressed
-        });
-
-
-
-
-
-
-///here
-let holdTarget = null;
-let holdTimeout = null;
-let didHold = false;
-const HOLD_DELAY = 250; // ms to count as a "hold"
-let stronko = '' 
-
-let st1 = -1
-let st2 = 0
-window.addEventListener('pointerdown', e => {
-    FLEX_engine = canvas.getBoundingClientRect();
-    XS_engine = e.clientX - FLEX_engine.left;
-    YS_engine = e.clientY - FLEX_engine.top;
-    TIP_engine.x = XS_engine - offset.x;
-    TIP_engine.y = YS_engine;
-    TIP_engine.body = TIP_engine;
-
-    room.check(TIP_engine);
-    if(rect1.isPointInside(TIP_engine)){
-       
-        if(fileon == false){
-            uploaded = 1
-        }else{
-
-            st1 = TIP_engine.x
-        }
-    }
-    let l = new LineOP(TIP_engine, TIP_engine);
-    let min = 99999999;
-    let index = -1;
-    for (let t = 0; t < nodes.length; t++) {
-        l.target = nodes[t].cap;
-        let h = l.hypotenuse();
-        if (h <= min && h <= nodes[t].offset.radius) {
-            index = t;
-            min = h;
-        }
-    }
-
-    if (index > -1) {
-        movedMouse = 1;
-
-        // Reset all node audio
+        let l = new LineOP(TIP_engine, TIP_engine);
+        let min = 99999999;
+        let index = -1;
         for (let t = 0; t < nodes.length; t++) {
-            nodes[t].content.message.volume = 0;
-            nodes[t].content.message.pause();
-            nodes[t].content.message.currentTime = 0;
+            l.target = nodes[t].cap;
+            let h = l.hypotenuse();
+            if (h <= min && h <= nodes[t].offset.radius) {
+                index = t;
+                min = h;
+            }
         }
 
-        holdTarget = nodes[index];
-        didHold = false;
+        if (index > -1) {
+            movedMouse = 1;
 
-        // Start hold timer
-        holdTimeout = setTimeout(() => {
-            addingto(holdTarget); // immediate effect on hold
-            startmouse = 10;
-            didHold = true; // mark that a hold occurred
-        }, HOLD_DELAY);
-    }
-});
+            // Reset all node audio
+            for (let t = 0; t < nodes.length; t++) {
+                nodes[t].content.message.volume = 0;
+                nodes[t].content.message.pause();
+                nodes[t].content.message.currentTime = 0;
+            }
 
-window.addEventListener('pointerup', async e => {
+            holdTarget = nodes[index];
+            didHold = false;
 
-    FLEX_engine = canvas.getBoundingClientRect();
-    XS_engine = e.clientX - FLEX_engine.left;
-    YS_engine = e.clientY - FLEX_engine.top;
-    TIP_engine.x = XS_engine - offset.x;
-    TIP_engine.y = YS_engine;
-    TIP_engine.body = TIP_engine;
-    if(rect1.isPointInside(TIP_engine)){
-
-        
-        console.log(1)
-        if(st1 > -1){
-
-            st2 = TIP_engine.x
-
-            makeNodeFromClip(st1, st2, rect1, coloron, fileon)
-            
+            // Start hold timer
+            holdTimeout = setTimeout(() => {
+                addingto(holdTarget); // immediate effect on hold
+                startmouse = 10;
+                didHold = true; // mark that a hold occurred
+            }, HOLD_DELAY);
         }
-    }
-    if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
+    });
 
-        if (didHold && holdTarget) {
-            // AFTER HOLD → run your full audio block
-            // if (keysPressed[' ']) {
+    window.addEventListener('pointerup', async e => {
+
+        FLEX_engine = canvas.getBoundingClientRect();
+        XS_engine = e.clientX - FLEX_engine.left;
+        YS_engine = e.clientY - FLEX_engine.top;
+        TIP_engine.x = XS_engine - offset.x;
+        TIP_engine.y = YS_engine;
+        TIP_engine.body = TIP_engine;
+        if (rect1.isPointInside(TIP_engine)) {
+
+
+            console.log(1)
+            if (st1 > -1) {
+
+                st2 = TIP_engine.x
+
+                makeNodeFromClip(st1, st2, rect1, coloron, fileon)
+
+            }
+        }
+        if (holdTimeout) {
+            clearTimeout(holdTimeout);
+            holdTimeout = null;
+
+            if (didHold && holdTarget) {
+                // AFTER HOLD → run your full audio block
+                // if (keysPressed[' ']) {
                 startmouse = 10;
 
                 if (adding == 1) {
@@ -534,11 +534,11 @@ window.addEventListener('pointerup', async e => {
                     });
 
                     let nodei = new Node(0, {
-                        message: {}, 
+                        message: {},
                         x: holdTarget.cap.x + (Math.random() - 0.5),
                         y: holdTarget.cap.y + 4
                     });
-                    nodei.ID = holdTarget.ID +'.'+( holdTarget.children.length+1)
+                    nodei.ID = holdTarget.ID +coloron+ '.' + (holdTarget.children.length + 1)
                     seenIDs.push(nodei.ID)
                     seenIDs.push(holdTarget.ID)
 
@@ -557,932 +557,931 @@ window.addEventListener('pointerup', async e => {
                     holdTarget = {};
                     addingOn = {};
                 }
-            // }
-        } else if (holdTarget) {
-            if (!didHold && holdTarget) {
-                movedMouse = 1;
-            
-                // Reset all node audio
-                for (let t = 0; t < nodes.length; t++) {
-                    nodes[t].content.message.volume = 0;
-                    nodes[t].content.message.pause();
-                    nodes[t].content.message.currentTime = 0;
+                // }
+            } else if (holdTarget) {
+                if (!didHold && holdTarget) {
+                    movedMouse = 1;
+
+                    // Reset all node audio
+                    for (let t = 0; t < nodes.length; t++) {
+                        nodes[t].content.message.volume = 0;
+                        nodes[t].content.message.pause();
+                        nodes[t].content.message.currentTime = 0;
+                    }
+
+                    const index = nodes.indexOf(holdTarget);
+
+                    if (pausedex === index) {
+                        // Node was already playing, pause it
+                        holdTarget.content.message.pause();
+                        holdTarget.content.message.currentTime = 0;
+                        pausedex = -1;
+                    } else {
+                        // Play this node
+                        holdTarget.content.message.volume = 1;
+                        holdTarget.content.message.play();
+                        holdTarget.touched = 1;
+                    }
+
+                    pausedex = index;
+                    holdTarget = null;
+                    addingOn = {};
                 }
-            
-                const index = nodes.indexOf(holdTarget);
-            
-                if (pausedex === index) {
-                    // Node was already playing, pause it
-                    holdTarget.content.message.pause();
-                    holdTarget.content.message.currentTime = 0;
-                    pausedex = -1;
-                } else {
-                    // Play this node
-                    holdTarget.content.message.volume = 1;
-                    holdTarget.content.message.play();
-                    holdTarget.touched = 1;
-                }
-            
-                pausedex = index;
-                holdTarget = null;
-                addingOn = {};
+
             }
-            
         }
-    }
-});
-
-async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
-    if (st2 < st1) [st1, st2] = [st2, st1];
-  
-    let high = new Rectangle(st1, rect1.y, st2 - st1, rect1.height, coloron + '60');
-    highs.push(high);
-  
-    console.log("pixel range:", st1, st2);
-  
-    // Decode to get duration
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const arrayBuffer = await fileon.arrayBuffer();
-    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-    const duration = decoded.duration;
-  
-    let srat1 = (st1 / 1280) * duration;
-    let srat2 = (st2 / 1280) * duration;
-  
-    if (srat2 <= srat1) {
-      console.warn("Invalid slice", srat1, srat2);
-      return;
-    }
-  
-    // Clip audio -> returns a Blob
-    let audioBlob = await clipAudio(fileon, srat1, srat2);
-  
-    // Wrap in an Audio element, like stopRecording does
-    const url = URL.createObjectURL(audioBlob);
-    const audio = new Audio();
-    audio.src = url;
-    audio.addEventListener("error", e => {
-      console.error("Audio loading error:", e);
-      URL.revokeObjectURL(url);
     });
-  
-    let nodei = new Node(0, {
-      message: {}, 
-      x: (st1 + st2) / 2,
-      y: rect1.y + rect1.height
-    });
-  
-    nodei.color = coloron;
-    nodei.ID = Math.floor((st1 + st2) / 2);
-  
-    nodei.content.message = audio;
-    nodei.messageType = "audio";
-    nodei.audioResult = { audioBlob }; // keep original blob like stopRecording
-  
-    allaud.push(audio);
-    topnodes.push(nodei);
-    nodes.push(nodei);
-    nodei.width = st2-st1
-  
-    seenIDs.push(nodei.ID)
-    // optional: send it over socket like your recording
-    sendAudioElement(nodei.ID, audio, nodei.usercolor, nodei.body.x, nodei.body.y, st2-st1);
-  }
-  
 
-  
+    async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
+        if (st2 < st1) [st1, st2] = [st2, st1];
 
-        window.addEventListener('pointermove', continued_stimuli);
+        let high = new Rectangle(st1, rect1.y, st2 - st1, rect1.height, coloron + '60');
+        highs.push(high);
 
-        window.addEventListener('pointerup', e => {
-            //for upclick actions
-        })
-        function continued_stimuli(e) {
-            FLEX_engine = canvas.getBoundingClientRect();
-            let ft = new Point(TIP_engine.x, TIP_engine.y)
-            XS_engine = e.clientX - FLEX_engine.left;
-            YS_engine = e.clientY - FLEX_engine.top;
-            TIP_engine.x = XS_engine-offset.x
-            TIP_engine.y = YS_engine
-            TIP_engine.body = TIP_engine
-            let l = new LineOP(ft,TIP_engine)
-            if(l.hypotenuse() >1){
+        console.log("pixel range:", st1, st2);
+
+        // Decode to get duration
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const arrayBuffer = await fileon.arrayBuffer();
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+        const duration = decoded.duration;
+
+        let srat1 = (st1 / 1280) * duration;
+        let srat2 = (st2 / 1280) * duration;
+
+        if (srat2 <= srat1) {
+            console.warn("Invalid slice", srat1, srat2);
+            return;
+        }
+
+        // Clip audio -> returns a Blob
+        let audioBlob = await clipAudio(fileon, srat1, srat2);
+
+        // Wrap in an Audio element, like stopRecording does
+        const url = URL.createObjectURL(audioBlob);
+        const audio = new Audio();
+        audio.src = url;
+        audio.addEventListener("error", e => {
+            console.error("Audio loading error:", e);
+            URL.revokeObjectURL(url);
+        });
+
+        let nodei = new Node(0, {
+            message: {},
+            x: (st1 + st2) / 2,
+            y: rect1.y + rect1.height
+        });
+
+        nodei.color = coloron;
+        nodei.ID = Math.floor((st1 + st2) / 2);
+
+        nodei.content.message = audio;
+        nodei.messageType = "audio";
+        nodei.audioResult = { audioBlob }; // keep original blob like stopRecording
+
+        allaud.push(audio);
+        topnodes.push(nodei);
+        nodes.push(nodei);
+        nodei.width = st2 - st1
+
+        seenIDs.push(nodei.ID)
+        // optional: send it over socket like your recording
+        sendAudioElement(nodei.ID, audio, nodei.usercolor, nodei.body.x, nodei.body.y, st2 - st1);
+    }
+
+
+
+
+    window.addEventListener('pointermove', continued_stimuli);
+
+    window.addEventListener('pointerup', e => {
+        //for upclick actions
+    })
+    function continued_stimuli(e) {
+        FLEX_engine = canvas.getBoundingClientRect();
+        let ft = new Point(TIP_engine.x, TIP_engine.y)
+        XS_engine = e.clientX - FLEX_engine.left;
+        YS_engine = e.clientY - FLEX_engine.top;
+        TIP_engine.x = XS_engine - offset.x
+        TIP_engine.y = YS_engine
+        TIP_engine.body = TIP_engine
+        let l = new LineOP(ft, TIP_engine)
+        if (l.hypotenuse() > 1) {
             movedMouse = 1
-            }
-            if(l.hypotenuse() >10){
-                startmouse = 5
-            }
-            if(l.hypotenuse() >50){
-                startmouse = 40
-            }
-            //for moving mouse actions
         }
-    }
-
-    Number.prototype.between = function (a, b, inclusive) {
-        var min = Math.min(a, b),
-            max = Math.max(a, b);
-        return inclusive ? this >= min && this <= max : this > min && this < max;
-    }
-
-    let setup_canvas = document.getElementById('canvas') //getting canvas from document
-    let offcanvas = document.getElementById('offcanvas') //getting canvas from document
-    let zffcanvas = document.getElementById('zffcanvas') //getting canvas from document
-
-    let off_context =  offcanvas.getContext('2d');
-    let zff_context =  zffcanvas.getContext('2d');
-    setUp(setup_canvas) // setting up canvas refrences, starting timer. 
-
-    function getRandomColor() { // random color
-        var letters = '0123456789ABCDEF';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-            color += letters[(Math.floor(Math.random() * 16) + 0)];
+        if (l.hypotenuse() > 10) {
+            startmouse = 5
         }
-        return color;
-    }
-    let coloron = getRandomColor()
-    let worldcolor = 'olive'
-    nodeid = 0
-    class Node {
-        constructor(type, content){
-            this.width = -1
-            this.usercolor = coloron
-            this.touched = 0
-            this.ID = nodeid
-            seenIDs.push(nodeid)
-            // nodeid++
-            this.body = {}
-            this.body.type = type
-            this.content = content
-            this.body.x = content.x
-            this.body.y = content.y
-            this.offset = {}
-            this.offset.x = 0
-            this.offset.y = 0
-            this.offset.radius = 12
-            this.children = []
-            this.type = type
-            this.l = new LineOP(this.body, this.body)
-            this.cap = {}
-            this.cap.x =0 
-            this.cap.y =0 
-            this.layer = 0
-            this.parent = {}
-            this.offset.colorball = worldcolor
-            this.latentColor = getRandomColor()
-            this.unik=Math.random()*3
-
-            this.childing = 0
-            // this.parent.cap = new Point(this.body.x+1, this.body.y+1)
+        if (l.hypotenuse() > 50) {
+            startmouse = 40
         }
-        offsetting(){
-            if(topnodes.includes(this)){
-                return
+        //for moving mouse actions
+    }
+}
+
+Number.prototype.between = function (a, b, inclusive) {
+    var min = Math.min(a, b),
+        max = Math.max(a, b);
+    return inclusive ? this >= min && this <= max : this > min && this < max;
+}
+
+let setup_canvas = document.getElementById('canvas') //getting canvas from document
+let offcanvas = document.getElementById('offcanvas') //getting canvas from document
+let zffcanvas = document.getElementById('zffcanvas') //getting canvas from document
+
+let off_context = offcanvas.getContext('2d');
+let zff_context = zffcanvas.getContext('2d');
+setUp(setup_canvas) // setting up canvas refrences, starting timer. 
+
+function getRandomColor() { // random color
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += letters[(Math.floor(Math.random() * 16) + 0)];
+    }
+    return color;
+}
+let coloron = getRandomColor()
+let worldcolor = 'olive'
+nodeid = 0
+class Node {
+    constructor(type, content) {
+        this.width = -1
+        this.usercolor = coloron
+        this.touched = 0
+        this.ID = nodeid
+        seenIDs.push(nodeid)
+        // nodeid++
+        this.body = {}
+        this.body.type = type
+        this.content = content
+        this.body.x = content.x
+        this.body.y = content.y
+        this.offset = {}
+        this.offset.x = 0
+        this.offset.y = 0
+        this.offset.radius = 12
+        this.children = []
+        this.type = type
+        this.l = new LineOP(this.body, this.body)
+        this.cap = {}
+        this.cap.x = 0
+        this.cap.y = 0
+        this.layer = 0
+        this.parent = {}
+        this.offset.colorball = worldcolor
+        this.latentColor = getRandomColor()
+        this.unik = Math.random() * 3
+
+        this.childing = 0
+        // this.parent.cap = new Point(this.body.x+1, this.body.y+1)
+    }
+    offsetting() {
+        if (topnodes.includes(this)) {
+            return
+        }
+        this.hash = {}
+        for (let t = 0; t < nodes.length; t++) {
+            if (this != nodes[t]) {
+                this.l.object = this.cap
+                this.l.target = nodes[t].cap
+
+                this.hash[t] = {}
+                this.hash[t].distance = Math.max(this.l.hypotenuse() + 1, 10)
+                this.hash[t].x = nodes[t].cap.x
+                this.hash[t].y = nodes[t].cap.y
+                this.hash[t].radius = nodes[t].offset.radius
+                this.hash[t].p = nodes.indexOf(nodes[t])
             }
-            
-            this.hash = {}
-            for(let t = 0;t<nodes.length;t++){
-                if(this!=nodes[t]){
-                    this.l.object = this.cap
-                    this.l.target = nodes[t].cap
+        }
 
-                    this.hash[t] = {}
-                    this.hash[t].distance = Math.max(this.l.hypotenuse()+1,10)
-                    this.hash[t].x = nodes[t].cap.x
-                    this.hash[t].y = nodes[t].cap.y
-                    this.hash[t].radius = nodes[t].offset.radius
-                    this.hash[t].p = nodes.indexOf(nodes[t])
+        let keys = Object.keys(this.hash)
+        let force = {}
+        let force2 = {}
+
+        for (let t = 0; t < keys.length; t++) {
+            force.x = 0
+            force.y = 0
+            if (this.hash[keys[t]].distance < this.offset.radius + this.hash[keys[t]].radius) {
+
+                force.x += (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
+                force.y += (this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
+
+
+                if (this.childos != 1) {
+                    this.offset.x -= force.x / .6
+                    this.offset.y -= force.y / .6
+                } else {
+
+                    this.offset.x -= force.x / 5.6
+                    this.offset.y -= force.y / 5.6
                 }
-            }
-
-            let keys = Object.keys(this.hash)
-            let force = {}
-            let force2 = {}
-
-            for(let t = 0;t<keys.length;t++){
-                force.x = 0
-                force.y = 0
-                if(this.hash[keys[t]].distance < this.offset.radius + this.hash[keys[t]].radius){
-
-                    force.x += (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
-                    force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
+            } else {
+                if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius) * 1.1) {
+                    if (this.hash[keys[t]].distance > (this.offset.radius + this.hash[keys[t]].radius) * .1) {
 
 
-                    if(this.childos != 1){
-                    this.offset.x -= force.x/.6
-                    this.offset.y -= force.y/.6
-                    }else{
-
-                    this.offset.x -= force.x/5.6
-                    this.offset.y -= force.y/5.6
-                    }
-                }else{
-                    if(this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)*1.1){
-                        if(this.hash[keys[t]].distance >( this.offset.radius + this.hash[keys[t]].radius)*.1){
-
-                        
-                    force.x += (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
-                    // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
+                        force.x += (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
+                        // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
-                    if(this.childos != 1){
-                    this.offset.x += force.x/50
-                    this.offset.y += force.y/50
-                    }else{
+                        if (this.childos != 1) {
+                            this.offset.x += force.x / 50
+                            this.offset.y += force.y / 50
+                        } else {
 
-                    this.offset.x += force.x/550
-                    this.offset.y += force.y/550
-                    }
+                            this.offset.x += force.x / 550
+                            this.offset.y += force.y / 550
                         }
                     }
                 }
             }
+        }
 
-            if(!(topnodes.includes(this))){
-            for(let t = 0;t<keys.length;t++){
-                if(this.hash[keys[t]].p == nodes.indexOf(this.parent)){
+        if (!(topnodes.includes(this))) {
+            for (let t = 0; t < keys.length; t++) {
+                if (this.hash[keys[t]].p == nodes.indexOf(this.parent)) {
 
                     force2.x = 0
                     force2.y = 0
-                    if(this.hash[keys[t]].distance > this.offset.radius*2){
-    
-                        force2.x -= (this.hash[keys[t]].x-(this.body.x+this.offset.x))/this.hash[keys[t]].distance
-                        force2.y  -= (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
-    
-    
-                        if(this.childos != 1){
-                        this.offset.x -= force2.x/2
-                        this.offset.y -= force2.y/2
-                        }else{
+                    if (this.hash[keys[t]].distance > this.offset.radius * 2) {
 
-                        this.offset.x -= force2.x/55
-                        this.offset.y -= force2.y/55
+                        force2.x -= (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
+                        force2.y -= (this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
+
+
+                        if (this.childos != 1) {
+                            this.offset.x -= force2.x / 2
+                            this.offset.y -= force2.y / 2
+                        } else {
+
+                            this.offset.x -= force2.x / 55
+                            this.offset.y -= force2.y / 55
                         }
                     }
                 }
             }
         }
-            // console.log(this.hash)
+        // console.log(this.hash)
 
-            if(this.touched == 0){
+        if (this.touched == 0) {
 
-                // this.offset.x -= (Math.random()-.5)*1
-                // this.offset.y -=  (Math.random()-.5)*1
-                
+            // this.offset.x -= (Math.random()-.5)*1
+            // this.offset.y -=  (Math.random()-.5)*1
+
+        }
+        // if(topnodes.includes(this)){
+        let l = (this.cap.y - this.parent.cap.y)
+
+
+        if (this.childos != 1) {
+
+            if (l < Math.min(Math.max(this.offset.radius / 1.4, 12), 30) * (1.5 + this.unik)) {
+
+                this.offset.y += .4 * Math.sqrt(this.layer)
+            } else {
+                this.offset.y -= .2 * Math.sqrt(this.layer)
+
             }
-            // if(topnodes.includes(this)){
-                    let l = ( this.cap.y-this.parent.cap.y)
+        } else {
+            if (l < Math.min(Math.max(this.offset.radius / 1.4, 12), 30) * (1.5 + this.unik)) {
 
+                this.offset.y += 0 * Math.sqrt(this.layer)
+            } else {
+                this.offset.y -= 0 * Math.sqrt(this.layer)
 
-                    if(this.childos != 1){
-
-                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
-
-                            this.offset.y+=.4*Math.sqrt(this.layer)
-                        }else{
-                            this.offset.y-=.2*Math.sqrt(this.layer)
-    
-                        }
-                    }else{
-                        if(l <  Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
-
-                            this.offset.y+=0*Math.sqrt(this.layer)
-                        }else{
-                            this.offset.y-=0*Math.sqrt(this.layer)
-    
-                        }
-
-                    }
-                    // if(l.hypotenuse() > 60){
-
-                    //     this.offset.x -= (this.cap.x - this.parent.cap.x)/20
-                    //     this.offset.y -= (this.cap.y - this.parent.cap.y)/20
-                    // }
-
-                for(let t =0 ;t<this.children.length;t++){
-                    let l = this.children[t].cap.y-this.cap.y
-                    if(l < Math.min(Math.max(this.offset.radius/1.4, 12),30)*(1.5+this.unik)){
-
-                        this.children[t].offset.y+=.4*Math.sqrt(this.children[t].layer)
-                    }else{
-
-                        this.children[t].offset.y-=.2*Math.sqrt(this.children[t].layer)
-                    }
-                //     if(l.hypotenuse() > 60){
-
-                //         this.children[t].offset.x -= (this.children[t].cap.x - this.cap.x)/20
-                //         this.children[t].offset.y -= (this.children[t].cap.y - this.cap.y)/20
-                //     }
-                }
-
-            // }else{
-
-            // }
-
-            // let l = new LineOP(new Point(0,0), new Point(1000,1000), "blue",1)
-            // l.object = this.body
-            for(let t = 0;t<this.children.length;t++){
-                // this.children[t].offset.x += (Math.sign((this.body.x+this.offset.x) - (this.children[t].body.x-this.children[t].offset.x)))*2
-                // this.children[t].offset.y += (Math.sign((this.body.y+this.offset.y) - (this.children[t].body.y-this.children[t].offset.y)))*2
-                // l.target = new Point(this.children[t].offset.x+this.children[t].body.x, this.children[t].offset.y+this.children[t].body.y)
-                // l.draw()
             }
 
-            let radsnap = new LineOP(TIP_engine, this.cap)
+        }
+        // if(l.hypotenuse() > 60){
 
-            this.checker = new Circle(this.cap.x, this.cap.y, this.offset.radius, 'red')
-            
-        
-            if(this.checker.isPointInside(TIP_engine)){
-                for(let t = 0;t<nodes.length;t++){
-                    nodes[t].childing = 0
-                    childrenset(nodes[t])
+        //     this.offset.x -= (this.cap.x - this.parent.cap.x)/20
+        //     this.offset.y -= (this.cap.y - this.parent.cap.y)/20
+        // }
+
+        for (let t = 0; t < this.children.length; t++) {
+            let l = this.children[t].cap.y - this.cap.y
+            if (l < Math.min(Math.max(this.offset.radius / 1.4, 12), 30) * (1.5 + this.unik)) {
+
+                this.children[t].offset.y += .4 * Math.sqrt(this.children[t].layer)
+            } else {
+
+                this.children[t].offset.y -= .2 * Math.sqrt(this.children[t].layer)
+            }
+            //     if(l.hypotenuse() > 60){
+
+            //         this.children[t].offset.x -= (this.children[t].cap.x - this.cap.x)/20
+            //         this.children[t].offset.y -= (this.children[t].cap.y - this.cap.y)/20
+            //     }
+        }
+
+        // }else{
+
+        // }
+
+        // let l = new LineOP(new Point(0,0), new Point(1000,1000), "blue",1)
+        // l.object = this.body
+        for (let t = 0; t < this.children.length; t++) {
+            // this.children[t].offset.x += (Math.sign((this.body.x+this.offset.x) - (this.children[t].body.x-this.children[t].offset.x)))*2
+            // this.children[t].offset.y += (Math.sign((this.body.y+this.offset.y) - (this.children[t].body.y-this.children[t].offset.y)))*2
+            // l.target = new Point(this.children[t].offset.x+this.children[t].body.x, this.children[t].offset.y+this.children[t].body.y)
+            // l.draw()
+        }
+
+        let radsnap = new LineOP(TIP_engine, this.cap)
+
+        this.checker = new Circle(this.cap.x, this.cap.y, this.offset.radius, 'red')
+
+
+        if (this.checker.isPointInside(TIP_engine)) {
+            for (let t = 0; t < nodes.length; t++) {
+                nodes[t].childing = 0
+                childrenset(nodes[t])
+            }
+            this.childos = 0 //1 for lock mouse
+            this.childing = 1
+            this.offset.colorball = this.latentColor
+            childrenset(this)
+            made = 1
+        } else {
+            if (made <= -2) {
+                if (this.childos == 1) {
+                    this.offset.x -= (this.cap.x - TIP_engine.x) / 4
+                    this.offset.y -= (this.cap.y - TIP_engine.y) / 4
                 }
-                this.childos = 0 //1 for lock mouse
-                this.childing = 1
-                this.offset.colorball = this.latentColor
+                this.childos = 0
+                this.childing = 0
+                // this.offset.colorball = worldcolor
                 childrenset(this)
-                made = 1
-            }else{
-                if(made <= -2){
-                    if(this.childos ==1){
-                        this.offset.x -= (this.cap.x-TIP_engine.x)/4
-                        this.offset.y -= (this.cap.y-TIP_engine.y)/4
-                    }
-                    this.childos = 0
-                    this.childing = 0
-                    // this.offset.colorball = worldcolor
-                    childrenset(this)
 
-                }
-                
-            }
-            this.offset.radius *=10
-            // this.offset.radius = 12
-            this.offset.radius += Math.max(30 + (10-(radsnap.hypotenuse()/1))/10,12)
-            if(this.childing==1){
-                this.offset.radius+=10
-                this.offset.radius /=11
-            }else{
-
-            this.offset.radius /=11
             }
 
         }
-    }
+        this.offset.radius *= 10
+        // this.offset.radius = 12
+        this.offset.radius += Math.max(30 + (10 - (radsnap.hypotenuse() / 1)) / 10, 12)
+        if (this.childing == 1) {
+            this.offset.radius += 10
+            this.offset.radius /= 11
+        } else {
 
-    function childrenset(node){
-        for(let t = 0;t<node.children.length;t++){
-            console.log('s')
-            node.children[t].offset.colorball = node.offset.colorball
-            node.children[t].childing = node.childing
-            childrenset(node.children[t])
+            this.offset.radius /= 11
         }
+
     }
-    let circle = new Circle(0,0,1, worldcolor)
+}
 
-        function drawNode(node){
-            // node.body.x -= .1
-        if(node.type == 0){ //audio react
-            circle.x = node.body.x+node.offset.x
-            circle.y = node.body.y+node.offset.y
-            circle.radius = node.offset.radius
-            circle.color = node.offset.colorball
-            // if(keysPressed['g']){
+function childrenset(node) {
+    for (let t = 0; t < node.children.length; t++) {
+        console.log('s')
+        node.children[t].offset.colorball = node.offset.colorball
+        node.children[t].childing = node.childing
+        childrenset(node.children[t])
+    }
+}
+let circle = new Circle(0, 0, 1, worldcolor)
 
-            if(node == addingOn){
-                circle.color = '#ffffff'
-            }else{
-                circle.color  = node.usercolor + (node.touched == 0 ? '':'a0')
-            }
-                circle.draw()
-            // }
+function drawNode(node) {
+    // node.body.x -= .1
+    if (node.type == 0) { //audio react
+        circle.x = node.body.x + node.offset.x
+        circle.y = node.body.y + node.offset.y
+        circle.radius = node.offset.radius
+        circle.color = node.offset.colorball
+        // if(keysPressed['g']){
 
-            if(keysPressed['f']){
+        if (node == addingOn) {
+            circle.color = '#ffffff'
+        } else {
+            circle.color = node.usercolor + (node.touched == 0 ? '' : 'a0')
+        }
+        circle.draw()
+        // }
+
+        if (keysPressed['f']) {
             let r = new Circle(circle.x + 50, circle.y + 50, circle.radius, node.latentColor)
             r.draw()
-            }
-            node.cap = {}
-            node.cap.x = circle.x
-            node.cap.y = circle.y
-            for(let t = 0;t<node.children.length;t++){
-                node.children[t].layer = node.layer+1
-                node.children[t].parent = node
-                drawNode(node.children[t])
-                // let link = new LineOP(node.cap, node.children[t].cap, "blue", 2)
-                // link.draw()
-            }
-        }else{
-
         }
-    }
-
-    function drawNodeD(node){
-        if(node.type == 0){
-            // console.log(node)
-            for(let t = 0;t<node.children.length;t++){
-                let link = new LineOP(new Point(node.body.x+node.offset.x, node.body.y+node.offset.y), new Point(node.children[t].body.x+node.children[t].offset.x,node.children[t].body.y+node.children[t].offset.y), node.color, node.offset.radius/4)
-                link.draw()
-                drawNodeD(node.children[t])
-            }
-        }else{
-
+        node.cap = {}
+        node.cap.x = circle.x
+        node.cap.y = circle.y
+        for (let t = 0; t < node.children.length; t++) {
+            node.children[t].layer = node.layer + 1
+            node.children[t].parent = node
+            drawNode(node.children[t])
+            // let link = new LineOP(node.cap, node.children[t].cap, "blue", 2)
+            // link.draw()
         }
-    }
+    } else {
 
-    let aud = new Audio()
-    allaud.push(aud)
-    aud.src = 'src.wav'
-    for(let t =0 ;t<1;t++){ //basenode
-        let nodei = new Node(0, {'message':aud, 'x':640,'y':640})
-        nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
+    }
+}
+
+function drawNodeD(node) {
+    if (node.type == 0) {
+        // console.log(node)
+        for (let t = 0; t < node.children.length; t++) {
+            let link = new LineOP(new Point(node.body.x + node.offset.x, node.body.y + node.offset.y), new Point(node.children[t].body.x + node.children[t].offset.x, node.children[t].body.y + node.children[t].offset.y), node.color, node.offset.radius / 4)
+            link.draw()
+            drawNodeD(node.children[t])
+        }
+    } else {
+
+    }
+}
+
+let aud = new Audio()
+allaud.push(aud)
+aud.src = 'src.wav'
+for (let t = 0; t < 1; t++) { //basenode
+    let nodei = new Node(0, { 'message': aud, 'x': 640, 'y': 640 })
+    nodei.color = `rgb(${t * 100}, ${0 * 100},${0 * 100})`
     allaud.push(nodei.content.message)
 
-        topnodes.push(nodei)
-        nodes.push(nodei)
-        // for(let k = 0;k<2;k++){
-        //     let n1 = new Node(0, {'message':'child1', 'x':500+Math.random() ,'y': 200+k} )
-        // n1.color = `rgb(${t*100}, ${k*100},${0*100})`
-        // nodei.children.push(n1)
-        //     nodes.push(n1)
+    topnodes.push(nodei)
+    nodes.push(nodei)
+    // for(let k = 0;k<2;k++){
+    //     let n1 = new Node(0, {'message':'child1', 'x':500+Math.random() ,'y': 200+k} )
+    // n1.color = `rgb(${t*100}, ${k*100},${0*100})`
+    // nodei.children.push(n1)
+    //     nodes.push(n1)
 
-        // for(let j = 0;j<2;j++){
-        //     let n3 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-        // n3.color = `rgb(${t*100}, ${k*100},${j*100})`
-        //     n1.children.push(n3)
-        //     nodes.push(n3)
+    // for(let j = 0;j<2;j++){
+    //     let n3 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+    // n3.color = `rgb(${t*100}, ${k*100},${j*100})`
+    //     n1.children.push(n3)
+    //     nodes.push(n3)
 
-        //     for(let r = 0;r<2;r++){
-        //         let n4 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-        //         n4.color = `rgb(${r*100}, ${k*100},${j*100})`
-        //         n3.children.push(n4)
-        //         nodes.push(n4)
-
-
-
-        //     for(let q = 0;q<2;q++){
-        //         let n5 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
-        //         n5.color = `rgb(${q*100}, ${k*100},${j*100})`
-        //         n4.children.push(n5)
-        //         nodes.push(n5)
-        //     }
-
-        //     }
-    
-
-
-        // }
-
-
-        // }
-    }
-
-    
-    // for(let t =0 ;t<1;t++){
-    //     let nodei = new Node(0, {'message':'top', 'x':800+Math.random(),'y':200})
-    //     nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
-    //     topnodes.push(nodei)
-    //     nodes.push(nodei)
-    //     for(let k = 0;k<1;k++){
-    //         let n1 = new Node(0, {'message':'child1', 'x':800+Math.random() ,'y': 200+k} )
-    //     n1.color = `rgb(${t*100}, ${k*100},${0*100})`
-    //     nodei.children.push(n1)
-    //         nodes.push(n1)
-
-    //     for(let j = 0;j<1;j++){
-    //         let n3 = new Node(0, {'message':'child2', 'x':800+ (j),'y':200+j})
-    //     n3.color = `rgb(${t*100}, ${k*100},${j*100})`
-    //         n1.children.push(n3)
-    //         nodes.push(n3)
-
-    //         for(let r = 0;r<2;r++){
-    //             let n4 = new Node(0, {'message':'child2', 'x':800+ (r-2) ,'y':200+j})
-    //             n4.color = `rgb(${r*100}, ${k*100},${j*100})`
-    //             n3.children.push(n4)
-    //             nodes.push(n4)
+    //     for(let r = 0;r<2;r++){
+    //         let n4 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+    //         n4.color = `rgb(${r*100}, ${k*100},${j*100})`
+    //         n3.children.push(n4)
+    //         nodes.push(n4)
 
 
 
-    //         for(let q = 0;q<3;q++){
-    //             let n5 = new Node(0, {'message':'child2', 'x':800+ (q-2) ,'y':200+j})
-    //             n5.color = `rgb(${q*100}, ${k*100},${j*100})`
-    //             n4.children.push(n5)
-    //             nodes.push(n5)
-    //         }
-
-    //         }
-    
-
+    //     for(let q = 0;q<2;q++){
+    //         let n5 = new Node(0, {'message':'child2', 'x':500+Math.random() ,'y':200+j})
+    //         n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+    //         n4.children.push(n5)
+    //         nodes.push(n5)
+    //     }
 
     //     }
 
 
-    //     }
+
     // }
-    function pointInPolygon(point, polygon) {
-        let inside = false;
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i].x, yi = polygon[i].y;
-            const xj = polygon[j].x, yj = polygon[j].y;
-    
-            const intersect = ((yi > point.y) !== (yj > point.y)) &&
-                (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
-    
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
-    
-    class RoomShape {
-        constructor(sides){
-
-            this.dots = []
-            this.outx = 0
-            this.outy = 0
-            this.center = new Circle(200, 500, 100, 'red')
-            this.da = 0
-            for(let t=0;t<12;t++){
-
-                this.outx = Math.cos(this.da)*(40+(Math.sin(this.da*sides)*1))
-                this.outy = Math.sin(this.da)*(40+(Math.sin(this.da*sides)*1))
-                let point = new Circle(this.center.x + this.outx, this.center.y+this.outy, 7, 'yellow')
-                point.r = 100
-                point.g = 100
-                point.b = 0
-                this.dots.push(point)
-                this.da += ((Math.PI*2)/12)
-            }
-
-            this.points = []
-            this.a = 0
-            for(let t = 0;t<30;t++){
-                this.outx = Math.cos(this.a)*(100+(Math.sin(this.a*sides)*30))
-                this.outy = Math.sin(this.a)*(100+(Math.sin(this.a*sides)*30))
-                let point = new Point(this.center.x + this.outx, this.center.y+this.outy )
-                this.points.push(point)
-                this.a += ((Math.PI*2)/30)
-            }
-        }
-        isPointInside(point){
-            return pointInPolygon(point, this.points)
-        }
-        check(point){
-            for(let t = 0;t<this.dots.length;t++){
-                if(this.dots[t].isPointInside(point)){
-                    this.dots[t].dragged*=-1
-                }
-            }
-        }
-        draw(){
-            if(this.isPointInside(TIP_engine)){
-                this.center.color = "olive"
-            }else{
-                this.center.color = "tan"
-
-            }
-            this.center.draw()
-            let inll = new LineOP(this.points[0],this.points[this.points.length-1], 'white', 3)
-            inll.draw()
-            for(let t = 0;t<this.dots.length;t++){
-                this.dots[t].color = `rgb(${this.dots[t].r}, ${this.dots[t].g}, ${this.dots[t].b})`
-         
-                if(Math.random() < .1){
-                    let ran = (Math.random()-.5) *25
-                    this.dots[t].g += ran
-                    this.dots[t].r -= ran
-                }
-                this.dots[t].r = Math.min(Math.max(this.dots[t].r, 0),255)
-                this.dots[t].g = Math.min(Math.max(this.dots[t].g, 0),255)
-                this.dots[t].draw()
-            }
-            for(let t = 0;t<this.points.length-1;t++){
-                let inll = new LineOP(this.points[t],this.points[t+1], 'white', 3)
-                inll.draw()
-                // let dot = new Circle(this.points[t].x, this.points[t].y, 3, 'white')
-                // dot.draw()
-            }
-        }
-    }
 
 
-    let room = new RoomShape(5)
-    let pix = canvas_context.getImageData(0,0,1280,720)
-    let rect1 = new Rectangle(-1000, 150, 12800, 40, "green")
-    function indexer(point, width) {
-        const x = Math.floor(point.x);
-        const y = Math.floor(point.y); 
-        return (y * width + x) * 4;
-    }
-    function addingto(nodeon){
-        addingOn=nodeon
-        adding = 1
-        startRecording()
-    }
-    function trimVersion(input) {
-        if (typeof input == 'number') return input; // numeric 0 stays 0
-      
-        if (typeof input === "string") {
-          if (input === "0") return 0; // string "0" becomes numeric 0
-      
-          let result = input.slice(0, -2); // remove last two characters
-          return result === "0" ? 0 : result;
-        }
-      
-        throw new Error("Input must be a string or 0");
-      }
-      
-    let pausedex = -1
-    let session =( Math.random()*100000)
-
-    async function sendAudioElement(id, audioElement, colorin, xin=320, yin=320, width= -1) {
-        if (!audioElement || !audioElement.src) {
-          console.error("sendAudioElement: missing audio element or src", audioElement);
-          return;
-        }
-        
-        try {
-          // Fetch audio data from the audio element's src (blob/object URL or remote URL)
-          const response = await fetch(audioElement.src);
-          const audioBlob = await response.blob();
-          const audioBuffer = await audioBlob.arrayBuffer();
-      
-          // Encode metadata
-          console.log(id) 
-          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorin+(width>-1?'':''), resend:1, x:xin, y:yin,width:width});
-          const encoder = new TextEncoder();
-          const metadataBytes = encoder.encode(metadata);
-      
-          // Combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
-          const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
-          const combined = new Uint8Array(totalLength);
-      
-          // Write metadata length (little-endian)
-          const view = new DataView(combined.buffer);
-          view.setUint32(0, metadataBytes.byteLength, true);
-      
-          // Copy metadata + audio
-          combined.set(metadataBytes, 4);
-          combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
-      
-          // Send
-          ws.send(combined.buffer);
-      
-        //   console.log("Audio element sent successfully, id:", id);
-        } catch (error) { 
-          console.error("Failed to send audio element:", error);
-        }
-      }
-      
-
-      function funyk(){
-
-        getAudioFile().then(file => {
-            console.log("User selected file:", file);
-            ///file
-
-            fileon = file
-            rect1.color = 'red'
-          visualizeAudio(fileon, zffcanvas, rect1.x, rect1.y, rect1.width, rect1.height)
-  
-        }).catch(err => {
-            console.error(err);
-        });
-      }
-
-      async function visualizeAudio(file, canvas, x = 0, y = 0, width = canvas.width, height = canvas.height) {
-        const ctx = canvas.getContext("2d");
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Read file as ArrayBuffer
-        const arrayBuffer = await file.arrayBuffer();
-        
-        // Decode audio data
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        const rawData = audioBuffer.getChannelData(0); // Use first channel
-        
-        const step = Math.ceil(rawData.length / width); // Number of samples per pixel
-        
-        // Clear the specified rectangle
-        ctx.clearRect(x, y, width, height);
-        
-        // Draw background for the rectangle
-        ctx.fillStyle = "#222";
-        ctx.fillRect(x, y, width, height);
-        
-        // Draw waveform
-        ctx.strokeStyle = "#0f0";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        
-        for (let i = 0; i < width; i++) {
-            const start = i * step;
-            const end = Math.min(start + step, rawData.length);
-            let min = 1.0;
-            let max = -1.0;
-            
-            for (let j = start; j < end; j++) {
-                const sample = rawData[j];
-                if (sample < min) min = sample;
-                if (sample > max) max = sample;
-            }
-            
-            const y1 = y + ((1 + min) / 2) * height;
-            const y2 = y + ((1 + max) / 2) * height;
-            
-            ctx.moveTo(x + i, y1);
-            ctx.lineTo(x + i, y2);
-        }
-        
-        ctx.stroke();
-    }
-    
-    // Usage example:
-    // const fileInput = document.querySelector("#audioFileInput");
-    // const canvas = document.querySelector("#waveformCanvas");
-    // fileInput.addEventListener("change", e => visualizeAudio(e.target.files[0], canvas, 50, 50, 400, 100));
-    async function clipAudio(fileOrBlob, startTime, endTime) {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let arrayBuffer;
-      
-        if (fileOrBlob instanceof Blob) {
-          arrayBuffer = await fileOrBlob.arrayBuffer();
-        } else {
-          throw new Error("clipAudio expects a File or Blob");
-        }
-      
-        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-      
-        startTime = Math.max(0, startTime);
-        endTime = Math.min(decoded.duration, endTime);
-        if (endTime <= startTime) throw new Error("Invalid clip range");
-      
-        const duration = endTime - startTime;
-        const sampleRate = decoded.sampleRate;
-        const channels = decoded.numberOfChannels;
-      
-        const clipped = audioCtx.createBuffer(
-          channels,
-          Math.floor(duration * sampleRate),
-          sampleRate
-        );
-      
-        for (let ch = 0; ch < channels; ch++) {
-          const data = decoded.getChannelData(ch).subarray(
-            Math.floor(startTime * sampleRate),
-            Math.floor(endTime * sampleRate)
-          );
-          clipped.copyToChannel(data, ch);
-        }
-      
-        // convert AudioBuffer -> WAV Blob
-        const wavBlob = audioBufferToWav(clipped); // same helper as before
-        return wavBlob; // <-- return a Blob
-      }
-      
-// helper: convert AudioBuffer → WAV Blob
-function audioBufferToWav(buffer) {
-  const numOfChan = buffer.numberOfChannels,
-    length = buffer.length * numOfChan * 2 + 44,
-    bufferArray = new ArrayBuffer(length),
-    view = new DataView(bufferArray),
-    channels = [],
-    sampleRate = buffer.sampleRate;
-
-  // write WAV header
-  function setUint16(data, offset) {
-    view.setUint16(offset, data, true);
-  }
-  function setUint32(data, offset) {
-    view.setUint32(offset, data, true);
-  }
-  let pos = 0;
-
-  setUint32(0x46464952, pos); // "RIFF"
-  pos += 4;
-  setUint32(length - 8, pos);
-  pos += 4;
-  setUint32(0x45564157, pos); // "WAVE"
-  pos += 4;
-  setUint32(0x20746d66, pos); // "fmt "
-  pos += 4;
-  setUint32(16, pos);
-  pos += 4;
-  setUint16(1, pos);
-  pos += 2;
-  setUint16(numOfChan, pos);
-  pos += 2;
-  setUint32(sampleRate, pos);
-  pos += 4;
-  setUint32(sampleRate * 2 * numOfChan, pos);
-  pos += 4;
-  setUint16(numOfChan * 2, pos);
-  pos += 2;
-  setUint16(16, pos);
-  pos += 2;
-  setUint32(0x61746164, pos); // "data"
-  pos += 4;
-  setUint32(length - pos - 4, pos);
-  pos += 4;
-
-  // write interleaved samples
-  for (let i = 0; i < buffer.numberOfChannels; i++)
-    channels.push(buffer.getChannelData(i));
-
-  let offset = 0;
-  while (offset < buffer.length) {
-    for (let i = 0; i < numOfChan; i++) {
-      let sample = Math.max(-1, Math.min(1, channels[i][offset]));
-      sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-      view.setInt16(pos, sample, true);
-      pos += 2;
-    }
-    offset++;
-  }
-
-  return new Blob([bufferArray], { type: "audio/wav" });
+    // }
 }
 
 
-   async function main() {
+// for(let t =0 ;t<1;t++){
+//     let nodei = new Node(0, {'message':'top', 'x':800+Math.random(),'y':200})
+//     nodei.color = `rgb(${t*100}, ${0*100},${0*100})`
+//     topnodes.push(nodei)
+//     nodes.push(nodei)
+//     for(let k = 0;k<1;k++){
+//         let n1 = new Node(0, {'message':'child1', 'x':800+Math.random() ,'y': 200+k} )
+//     n1.color = `rgb(${t*100}, ${k*100},${0*100})`
+//     nodei.children.push(n1)
+//         nodes.push(n1)
+
+//     for(let j = 0;j<1;j++){
+//         let n3 = new Node(0, {'message':'child2', 'x':800+ (j),'y':200+j})
+//     n3.color = `rgb(${t*100}, ${k*100},${j*100})`
+//         n1.children.push(n3)
+//         nodes.push(n3)
+
+//         for(let r = 0;r<2;r++){
+//             let n4 = new Node(0, {'message':'child2', 'x':800+ (r-2) ,'y':200+j})
+//             n4.color = `rgb(${r*100}, ${k*100},${j*100})`
+//             n3.children.push(n4)
+//             nodes.push(n4)
+
+
+
+//         for(let q = 0;q<3;q++){
+//             let n5 = new Node(0, {'message':'child2', 'x':800+ (q-2) ,'y':200+j})
+//             n5.color = `rgb(${q*100}, ${k*100},${j*100})`
+//             n4.children.push(n5)
+//             nodes.push(n5)
+//         }
+
+//         }
+
+
+
+//     }
+
+
+//     }
+// }
+function pointInPolygon(point, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > point.y) !== (yj > point.y)) &&
+            (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+class RoomShape {
+    constructor(sides) {
+
+        this.dots = []
+        this.outx = 0
+        this.outy = 0
+        this.center = new Circle(200, 500, 100, 'red')
+        this.da = 0
+        for (let t = 0; t < 12; t++) {
+
+            this.outx = Math.cos(this.da) * (40 + (Math.sin(this.da * sides) * 1))
+            this.outy = Math.sin(this.da) * (40 + (Math.sin(this.da * sides) * 1))
+            let point = new Circle(this.center.x + this.outx, this.center.y + this.outy, 7, 'yellow')
+            point.r = 100
+            point.g = 100
+            point.b = 0
+            this.dots.push(point)
+            this.da += ((Math.PI * 2) / 12)
+        }
+
+        this.points = []
+        this.a = 0
+        for (let t = 0; t < 30; t++) {
+            this.outx = Math.cos(this.a) * (100 + (Math.sin(this.a * sides) * 30))
+            this.outy = Math.sin(this.a) * (100 + (Math.sin(this.a * sides) * 30))
+            let point = new Point(this.center.x + this.outx, this.center.y + this.outy)
+            this.points.push(point)
+            this.a += ((Math.PI * 2) / 30)
+        }
+    }
+    isPointInside(point) {
+        return pointInPolygon(point, this.points)
+    }
+    check(point) {
+        for (let t = 0; t < this.dots.length; t++) {
+            if (this.dots[t].isPointInside(point)) {
+                this.dots[t].dragged *= -1
+            }
+        }
+    }
+    draw() {
+        if (this.isPointInside(TIP_engine)) {
+            this.center.color = "olive"
+        } else {
+            this.center.color = "tan"
+
+        }
+        this.center.draw()
+        let inll = new LineOP(this.points[0], this.points[this.points.length - 1], 'white', 3)
+        inll.draw()
+        for (let t = 0; t < this.dots.length; t++) {
+            this.dots[t].color = `rgb(${this.dots[t].r}, ${this.dots[t].g}, ${this.dots[t].b})`
+
+            if (Math.random() < .1) {
+                let ran = (Math.random() - .5) * 25
+                this.dots[t].g += ran
+                this.dots[t].r -= ran
+            }
+            this.dots[t].r = Math.min(Math.max(this.dots[t].r, 0), 255)
+            this.dots[t].g = Math.min(Math.max(this.dots[t].g, 0), 255)
+            this.dots[t].draw()
+        }
+        for (let t = 0; t < this.points.length - 1; t++) {
+            let inll = new LineOP(this.points[t], this.points[t + 1], 'white', 3)
+            inll.draw()
+            // let dot = new Circle(this.points[t].x, this.points[t].y, 3, 'white')
+            // dot.draw()
+        }
+    }
+}
+
+
+let room = new RoomShape(5)
+let pix = canvas_context.getImageData(0, 0, 1280, 720)
+let rect1 = new Rectangle(-1000, 150, 12800, 40, "green")
+function indexer(point, width) {
+    const x = Math.floor(point.x);
+    const y = Math.floor(point.y);
+    return (y * width + x) * 4;
+}
+function addingto(nodeon) {
+    addingOn = nodeon
+    adding = 1
+    startRecording()
+}
+function trimVersion(input) {
+    if (typeof input == 'number') return input; // numeric 0 stays 0
+
+    if (typeof input === "string") {
+        if (input === "0") return 0; // string "0" becomes numeric 0
+
+        let result = input.slice(0, -9); // remove last two characters
+        return result === "0" ? 0 : result;
+    }
+
+    throw new Error("Input must be a string or 0");
+}
+
+let pausedex = -1
+let session = (Math.random() * 100000)
+
+async function sendAudioElement(id, audioElement, colorin, xin = 320, yin = 320, width = -1) {
+    if (!audioElement || !audioElement.src) {
+        console.error("sendAudioElement: missing audio element or src", audioElement);
+        return;
+    }
+
+    try {
+        // Fetch audio data from the audio element's src (blob/object URL or remote URL)
+        const response = await fetch(audioElement.src);
+        const audioBlob = await response.blob();
+        const audioBuffer = await audioBlob.arrayBuffer();
+
+        // Encode metadata
+        console.log(id)
+        const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorin + (width > -1 ? '' : ''), resend: 1, x: xin, y: yin, width: width });
+        const encoder = new TextEncoder();
+        const metadataBytes = encoder.encode(metadata);
+
+        // Combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
+        const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
+        const combined = new Uint8Array(totalLength);
+
+        // Write metadata length (little-endian)
+        const view = new DataView(combined.buffer);
+        view.setUint32(0, metadataBytes.byteLength, true);
+
+        // Copy metadata + audio
+        combined.set(metadataBytes, 4);
+        combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
+
+        // Send
+        ws.send(combined.buffer);
+
+        //   console.log("Audio element sent successfully, id:", id);
+    } catch (error) {
+        console.error("Failed to send audio element:", error);
+    }
+}
+
+
+function funyk() {
+
+    getAudioFile().then(file => {
+        console.log("User selected file:", file);
+        ///file
+
+        fileon = file
+        rect1.color = 'red'
+        visualizeAudio(fileon, zffcanvas, rect1.x, rect1.y, rect1.width, rect1.height)
+
+    }).catch(err => {
+        console.error(err);
+    });
+}
+
+async function visualizeAudio(file, canvas, x = 0, y = 0, width = canvas.width, height = canvas.height) {
+    const ctx = canvas.getContext("2d");
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Decode audio data
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const rawData = audioBuffer.getChannelData(0); // Use first channel
+
+    const step = Math.ceil(rawData.length / width); // Number of samples per pixel
+
+    // Clear the specified rectangle
+    ctx.clearRect(x, y, width, height);
+
+    // Draw background for the rectangle
+    ctx.fillStyle = "#222";
+    ctx.fillRect(x, y, width, height);
+
+    // Draw waveform
+    ctx.strokeStyle = "#0f0";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+
+    for (let i = 0; i < width; i++) {
+        const start = i * step;
+        const end = Math.min(start + step, rawData.length);
+        let min = 1.0;
+        let max = -1.0;
+
+        for (let j = start; j < end; j++) {
+            const sample = rawData[j];
+            if (sample < min) min = sample;
+            if (sample > max) max = sample;
+        }
+
+        const y1 = y + ((1 + min) / 2) * height;
+        const y2 = y + ((1 + max) / 2) * height;
+
+        ctx.moveTo(x + i, y1);
+        ctx.lineTo(x + i, y2);
+    }
+
+    ctx.stroke();
+}
+
+// Usage example:
+// const fileInput = document.querySelector("#audioFileInput");
+// const canvas = document.querySelector("#waveformCanvas");
+// fileInput.addEventListener("change", e => visualizeAudio(e.target.files[0], canvas, 50, 50, 400, 100));
+async function clipAudio(fileOrBlob, startTime, endTime) {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let arrayBuffer;
+
+    if (fileOrBlob instanceof Blob) {
+        arrayBuffer = await fileOrBlob.arrayBuffer();
+    } else {
+        throw new Error("clipAudio expects a File or Blob");
+    }
+
+    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+
+    startTime = Math.max(0, startTime);
+    endTime = Math.min(decoded.duration, endTime);
+    if (endTime <= startTime) throw new Error("Invalid clip range");
+
+    const duration = endTime - startTime;
+    const sampleRate = decoded.sampleRate;
+    const channels = decoded.numberOfChannels;
+
+    const clipped = audioCtx.createBuffer(
+        channels,
+        Math.floor(duration * sampleRate),
+        sampleRate
+    );
+
+    for (let ch = 0; ch < channels; ch++) {
+        const data = decoded.getChannelData(ch).subarray(
+            Math.floor(startTime * sampleRate),
+            Math.floor(endTime * sampleRate)
+        );
+        clipped.copyToChannel(data, ch);
+    }
+
+    // convert AudioBuffer -> WAV Blob
+    const wavBlob = audioBufferToWav(clipped); // same helper as before
+    return wavBlob; // <-- return a Blob
+}
+
+// helper: convert AudioBuffer → WAV Blob
+function audioBufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels,
+        length = buffer.length * numOfChan * 2 + 44,
+        bufferArray = new ArrayBuffer(length),
+        view = new DataView(bufferArray),
+        channels = [],
+        sampleRate = buffer.sampleRate;
+
+    // write WAV header
+    function setUint16(data, offset) {
+        view.setUint16(offset, data, true);
+    }
+    function setUint32(data, offset) {
+        view.setUint32(offset, data, true);
+    }
+    let pos = 0;
+
+    setUint32(0x46464952, pos); // "RIFF"
+    pos += 4;
+    setUint32(length - 8, pos);
+    pos += 4;
+    setUint32(0x45564157, pos); // "WAVE"
+    pos += 4;
+    setUint32(0x20746d66, pos); // "fmt "
+    pos += 4;
+    setUint32(16, pos);
+    pos += 4;
+    setUint16(1, pos);
+    pos += 2;
+    setUint16(numOfChan, pos);
+    pos += 2;
+    setUint32(sampleRate, pos);
+    pos += 4;
+    setUint32(sampleRate * 2 * numOfChan, pos);
+    pos += 4;
+    setUint16(numOfChan * 2, pos);
+    pos += 2;
+    setUint16(16, pos);
+    pos += 2;
+    setUint32(0x61746164, pos); // "data"
+    pos += 4;
+    setUint32(length - pos - 4, pos);
+    pos += 4;
+
+    // write interleaved samples
+    for (let i = 0; i < buffer.numberOfChannels; i++)
+        channels.push(buffer.getChannelData(i));
+
+    let offset = 0;
+    while (offset < buffer.length) {
+        for (let i = 0; i < numOfChan; i++) {
+            let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+            sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+            view.setInt16(pos, sample, true);
+            pos += 2;
+        }
+        offset++;
+    }
+
+    return new Blob([bufferArray], { type: "audio/wav" });
+}
+
+
+async function main() {
     // console.log(seenIDs)
     timerz++
 
 
-    if(uploaded == 1){
-         uploaded = 0
-         funyk()
+    if (uploaded == 1) {
+        uploaded = 0
+        funyk()
     }
 
 
-    if(timerz%233 == 0){
+    if (timerz % 233 == 0) {
 
-        if(nodes[Math.floor(timerz/233)%(nodes.length)].ID != 0){
+        if (nodes[Math.floor(timerz / 233) % (nodes.length)].ID != 0) {
 
-            sendAudioElement(nodes[Math.floor(timerz/233)%(nodes.length)].ID, nodes[Math.floor(timerz/233)%(nodes.length)].content.message, nodes[Math.floor(timerz/233)%(nodes.length)].usercolor,nodes[Math.floor(timerz/233)%(nodes.length)].cap.x, nodes[Math.floor(timerz/233)%(nodes.length)].cap.y, nodes[Math.floor(timerz/233)%(nodes.length)].width)
+            sendAudioElement(nodes[Math.floor(timerz / 233) % (nodes.length)].ID, nodes[Math.floor(timerz / 233) % (nodes.length)].content.message, nodes[Math.floor(timerz / 233) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 233) % (nodes.length)].width)
         }
     }
-        off_context.clearRect(0,0,1280, 1280) 
-        off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
-        canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
-        // timespeed--
-        timeon = 0 
-        if(timespeed<=0){
-            timespeed = 20
-            canvas_context.translate(-1, 0)
-            offset.x-=1
-            timeon = 1
-            for(let t= 0;t<nodes.length;t++){
-                if(nodes[t].childing ==1){
+    off_context.clearRect(0, 0, 1280, 1280)
+    off_context.drawImage(canvas, offset.x, 0, 1280, 1280, 0, 0, 1280, 1280)
+    canvas_context.clearRect(-1000, -1000, canvas.width * 1, canvas.height * 1)
+    // timespeed--
+    timeon = 0
+    if (timespeed <= 0) {
+        timespeed = 20
+        canvas_context.translate(-1, 0)
+        offset.x -= 1
+        timeon = 1
+        for (let t = 0; t < nodes.length; t++) {
+            if (nodes[t].childing == 1) {
 
-                    if(nodes[t].childos ==1){
-                        nodes[t].offset.x -= (nodes[t].cap.x-TIP_engine.x)/2
-                        nodes[t].offset.y -= (nodes[t].cap.y-TIP_engine.y)/2
-                    }
+                if (nodes[t].childos == 1) {
+                    nodes[t].offset.x -= (nodes[t].cap.x - TIP_engine.x) / 2
+                    nodes[t].offset.y -= (nodes[t].cap.y - TIP_engine.y) / 2
                 }
             }
         }
+    }
 
-        if(!(movedMouse == 1 ||startmouse >0)){
-        canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
-        canvas_context.drawImage(offcanvas,0, 0, 1280,1280, 0, 0,1280,1280)
-        }else if(movedMouse == 1 ||startmouse >0){
+    if (!(movedMouse == 1 || startmouse > 0)) {
+        canvas_context.clearRect(-1000, -1000, canvas.width * 100, canvas.height * 100)
+        canvas_context.drawImage(offcanvas, 0, 0, 1280, 1280, 0, 0, 1280, 1280)
+    } else if (movedMouse == 1 || startmouse > 0) {
         made--
-            startmouse--
-            // movedMouse = 0
-        canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
+        startmouse--
+        // movedMouse = 0
+        canvas_context.clearRect(-1000, -1000, canvas.width * 100, canvas.height * 100)
         rect1.draw()
-        if(fileon != false){
-            canvas_context.drawImage(zffcanvas,0, 0, 1280,1280, 0, 0,1280,1280)
+        if (fileon != false) {
+            canvas_context.drawImage(zffcanvas, 0, 0, 1280, 1280, 0, 0, 1280, 1280)
 
         }
-        for(let t =0 ;t<highs.length;t++){
+        for (let t = 0; t < highs.length; t++) {
             highs[t].draw()
         }
 
         // if(timerz >= 1000){
-            // timerz=0
-            // for(let t =0;t<nodes.length;t++){
-            //     if(nodes[t].ID!=0){
+        // timerz=0
+        // for(let t =0;t<nodes.length;t++){
+        //     if(nodes[t].ID!=0){
 
-                // }
-                // }
-         
         // }
-        
-        for(let t =0;t<topnodes.length;t++){
-            drawNodeD(topnodes[t])
-        }    
-        for(let t =0;t<topnodes.length;t++){
-            drawNode(topnodes[t])
-        }       
-        for(let t =0;t<nodes.length;t++){
-                nodes[t].offsetting()
-                if(seenIDs.includes(nodes[t].ID)){
+        // }
 
-                }else{
-                    // seenIDs.push(nodes[t].ID)
-                }
+        // }
+
+        for (let t = 0; t < topnodes.length; t++) {
+            drawNodeD(topnodes[t])
+        }
+        for (let t = 0; t < topnodes.length; t++) {
+            drawNode(topnodes[t])
+        }
+        for (let t = 0; t < nodes.length; t++) {
+            nodes[t].offsetting()
+            if (seenIDs.includes(nodes[t].ID)) {
+
+            } else {
+                // seenIDs.push(nodes[t].ID)
+            }
         }
         // room.draw()
         // if(keysPressed['f']){
@@ -1498,297 +1497,296 @@ function audioBufferToWav(buffer) {
 }
 
 
-  let recorder;
+let recorder;
 
-  async function startRecording() {
+async function startRecording() {
     recorder = await recordAudio();
     console.log("Recording started...");
-  }
-  async function stopRecording() {
+}
+async function stopRecording() {
     const result = await recorder.stop();
     console.log("Recording stopped!");
     return result; // ✅ return the full object { audioBlob, audioUrl, audio }
-  }
-  
-  
-  // helper that creates the recording object
-  async function recordAudio() {
+}
+
+
+// helper that creates the recording object
+async function recordAudio() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mediaRecorder = new MediaRecorder(stream);
     const audioChunks = [];
-  
+
     return new Promise((resolve) => {
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-  
-      mediaRecorder.start();
-  
-      resolve({
-        stop: () =>
-          new Promise((res) => {
-            mediaRecorder.onstop = () => {
-              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-              const audioUrl = URL.createObjectURL(audioBlob);
-              const audio = new Audio(audioUrl);
-              res({ audioBlob, audioUrl, audio });
-            };
-            mediaRecorder.stop();
-            stream.getTracks().forEach(track => track.stop());
-          })
-      });
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.start();
+
+        resolve({
+            stop: () =>
+                new Promise((res) => {
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        res({ audioBlob, audioUrl, audio });
+                    };
+                    mediaRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                })
+        });
     });
-  }
+}
 
 
 
-  // connect to the same WS as your server
-  // Dynamic WebSocket URL that works locally and on Heroku
+// connect to the same WS as your server
+// Dynamic WebSocket URL that works locally and on Heroku
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const host = window.location.host; // Gets domain:port automatically
 const ws = new WebSocket(`${protocol}//${host}`);
 
 // when connected
 ws.onopen = () => {
-  console.log("WS connected!");
+    console.log("WS connected!");
 };
 
 // helper: send object + audio file
 // helper: send object + audio file
 async function sendAudioObject(id, file) {
     if (!file || !file.audioBlob) {
-      console.error("sendAudioObject: missing audioBlob", file);
-      return; 
+        console.error("sendAudioObject: missing audioBlob", file);
+        return;
     }
-  
+
     try {
-      // Convert audio blob to ArrayBuffer
-      const audioBuffer = await file.audioBlob.arrayBuffer();
-  
-      // Convert metadata JSON to Uint8Array
-      const metadata = JSON.stringify({ type: "audio", ID: id, usercolor:coloron});
-      const encoder = new TextEncoder();
-      const metadataBytes = encoder.encode(metadata);
-  
-      // Create combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
-      const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
-      const combined = new Uint8Array(totalLength);
-  
-      // Write metadata length (4 bytes, little-endian)
-      const view = new DataView(combined.buffer);
-      view.setUint32(0, metadataBytes.byteLength, true);
-  
-      // Copy metadata and audio into combined buffer
-      combined.set(metadataBytes, 4);
-      combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
-  
-      // Send combined buffer in one call
-      ws.send(combined.buffer);
-  
-      console.log("Audio sent successfully in one message, id:", id);
+        // Convert audio blob to ArrayBuffer
+        const audioBuffer = await file.audioBlob.arrayBuffer();
+
+        // Convert metadata JSON to Uint8Array
+        const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: coloron });
+        const encoder = new TextEncoder();
+        const metadataBytes = encoder.encode(metadata);
+
+        // Create combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
+        const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
+        const combined = new Uint8Array(totalLength);
+
+        // Write metadata length (4 bytes, little-endian)
+        const view = new DataView(combined.buffer);
+        view.setUint32(0, metadataBytes.byteLength, true);
+
+        // Copy metadata and audio into combined buffer
+        combined.set(metadataBytes, 4);
+        combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
+
+        // Send combined buffer in one call
+        ws.send(combined.buffer);
+
+        console.log("Audio sent successfully in one message, id:", id);
     } catch (error) {
-      console.error("Failed to send audio:", error);
+        console.error("Failed to send audio:", error);
     }
-  }
-  
+}
 
-  socketize(ws)
-  function socketize(ws) {
+
+socketize(ws)
+function socketize(ws) {
     ws.binaryType = "arraybuffer";
-  
+
     ws.addEventListener("message", async ({ data }) => {
-      try {
+        try {
             console.log(data)
-        // --- TEXT PACKETS ---
-        if (typeof data === "string") {
-          const d = JSON.parse(data);
-          let indexer = -1;
-          for (let t = 0; t < nodes.length; t++) {
-            if ((d.ID) == nodes[t].ID) {
-              indexer = t;
-              console.log("text indexer:", t);
+            // --- TEXT PACKETS ---
+            if (typeof data === "string") {
+                const d = JSON.parse(data);
+                let indexer = -1;
+                for (let t = 0; t < nodes.length; t++) {
+                    if ((d.ID) == nodes[t].ID) {
+                        indexer = t;
+                        console.log("text indexer:", t);
+                    }
+                }
+
+                // if no parent node, bail
+                if (indexer === -1) return;
+
+                // --- RESEND BRANCH ----
+                console.log(d)
+                if (d.resend === 1) {
+                    console.log(seenIDs, d)
+                    if (seenIDs.includes(d.ID)) return; // skip if seen
+                    for (let t = 0; t < nodes.length; t++) {
+                        if ((d.ID) == nodes[t].ID) {
+                            indexer = t;
+                            //   console.log("text indexer:", t);
+                        }
+                    }
+
+                    if (indexer === -1) {
+
+                        if (typeof d.ID == 'number') {
+
+                            let node = new Node(0, {
+                                message: {},
+                                x: d.x,
+                                y: d.y
+                            });
+                            let high = new Rectangle(d.x, d.y - rect1.height, d.width, rect1.height, d.usercolor + '60')
+                            highs.push(high)
+                            node.ID = metadata.ID;
+                            node.width = d.width
+                            seenIDs.push(node.ID);
+                            node.usercolor = d.usercolor;
+                            node.content.message = audio;
+                            allaud.push(node.content.message);
+                            nodes.push(node);
+                            topnodes.push(node);
+                            startmouse = 100;
+                        }
+
+                        return
+                    }
+
+
+                    let node = new Node(0, {
+                        message: {},
+                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
+                        y: nodes[indexer].cap.y + 4
+                    });
+                    node.ID = d.ID + d.usercolor+ "." + (nodes[indexer].children.length + 1) ;
+                    seenIDs.push(node.ID);
+                    node.usercolor = d.usercolor;
+                    node.content.message = d.audio;
+                    node.messageType = "text";
+                    nodes[indexer].children.push(node);
+                    nodes.push(node);
+                    startmouse = 100;
+                }
+                // --- NORMAL BRANCH ---
+                else {
+                    let node = new Node(0, {
+                        message: {},
+                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
+                        y: nodes[indexer].cap.y + 4
+                    });
+                    node.ID = nodes[indexer].ID + d.usercolor+ "." + (nodes[indexer].children.length + 1) ;
+                    seenIDs.push(node.ID);
+                    node.usercolor = d.usercolor;
+                    node.content.message = d.audio;
+                    node.messageType = "text";
+                    nodes[indexer].children.push(node);
+                    nodes.push(node);
+                    startmouse = 100;
+                }
+
+                // --- AUDIO PACKETS ---
+            } else if (data instanceof ArrayBuffer) {
+                const view = new DataView(data);
+                const metadataLength = view.getUint32(0, true);
+                const metadataBytes = new Uint8Array(data, 4, metadataLength);
+                const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
+
+                let indexer = -1;
+                for (let t = 0; t < nodes.length; t++) {
+                    if ((metadata.ID) == nodes[t].ID) {
+                        indexer = t;
+                        //   console.log("audio indexer:", t);
+                    }
+                }
+
+                const audioBytes = data.slice(4 + metadataLength);
+                const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
+                const url = URL.createObjectURL(audioBlob);
+
+                const audio = new Audio();
+                audio.src = url;
+
+                audio.addEventListener("error", (e) => {
+                    console.error("Audio loading error:", e);
+                    URL.revokeObjectURL(url);
+                });
+
+                audio.addEventListener("loadeddata", () => {
+                    console.log("Audio loaded and ready");
+                });
+
+                // --- RESEND BRANCH ---
+                console.log(metadata)
+                if (metadata.resend === 1) {
+                    console.log('resent', metadata.ID, seenIDs)
+                    if (seenIDs.includes(metadata.ID)) return; // skip if seen
+                    console.log('unseen')
+                    // console.log(nodes)
+
+                    let numbeee = trimVersion(metadata.ID)
+                    console.log(numbeee)
+                    for (let t = 0; t < nodes.length; t++) {
+                        console.log(nodes[t].ID, metadata.ID)
+                        if (numbeee == nodes[t].ID) {
+                            indexer = t;
+                            //   console.log("text indexer:", t);
+                        }
+                    }
+                    if (indexer === -1) {
+
+                        if (typeof numbeee == 'number') {
+
+                            let node = new Node(0, {
+                                message: {},
+                                x: metadata.x,
+                                y: metadata.y
+                            });
+                            let high = new Rectangle(metadata.x - (metadata.width / 2), metadata.y - rect1.height, metadata.width, rect1.height, metadata.usercolor + '60')
+                            highs.push(high)
+                            node.ID = metadata.ID;
+                            seenIDs.push(node.ID);
+                            node.width = metadata.width
+                            node.usercolor = metadata.usercolor;
+                            node.content.message = audio;
+                            allaud.push(node.content.message);
+                            topnodes.push(node);
+                            nodes.push(node);
+                            startmouse = 100;
+                        }
+
+                        return
+                    }
+                    let node = new Node(0, {
+                        message: {},
+                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
+                        y: nodes[indexer].cap.y + 4
+                    });
+                    node.ID = metadata.ID;
+                    seenIDs.push(node.ID);
+                    node.usercolor = metadata.usercolor;
+                    node.content.message = audio;
+                    allaud.push(node.content.message);
+                    nodes[indexer].children.push(node);
+                    nodes.push(node);
+                    startmouse = 100;
+                } else {  // --- NORMAL BRANCH ---
+
+                    let node = new Node(0, {
+                        message: {},
+                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
+                        y: nodes[indexer].cap.y + 4
+                    });
+                    node.ID = nodes[indexer].ID +metadata.usercolor+ "." + (nodes[indexer].children.length + 1);
+                    seenIDs.push(node.ID);
+                    node.usercolor = metadata.usercolor;
+                    node.content.message = audio;
+                    allaud.push(node.content.message);
+                    nodes[indexer].children.push(node);
+                    nodes.push(node);
+                    startmouse = 100;
+                }
             }
-          }
-  
-          // if no parent node, bail
-          if (indexer === -1) return;
-  
-          // --- RESEND BRANCH ----
-          console.log(d)
-          if (d.resend === 1) {
-            console.log(seenIDs, d)
-            if (seenIDs.includes(d.ID)) return; // skip if seen
-            for (let t = 0; t < nodes.length; t++) {
-                if ((d.ID) == nodes[t].ID) {
-                  indexer = t;
-                //   console.log("text indexer:", t);
-                }
-              }
-              
-              if (indexer === -1){
-
-                if(typeof d.ID == 'number'){
-                    
-            let node = new Node(0, {
-                message: {},
-                x: d.x,
-                y: d.y
-              });
-              let high = new Rectangle(d.x, d.y-rect1.height, d.width, rect1.height, d.usercolor+'60')
-              highs.push(high)
-              node.ID = metadata.ID;
-              node.width = d.width
-              seenIDs.push(node.ID);
-              node.usercolor = d.usercolor;
-              node.content.message = audio;
-              allaud.push(node.content.message);
-              nodes.push(node);
-              topnodes.push(node);
-              startmouse = 100;
-                }
-
-                return
-              }
-
-              
-            let node = new Node(0, {
-              message: {},
-              x: nodes[indexer].cap.x + (Math.random() - 0.5),
-              y: nodes[indexer].cap.y + 4
-            });
-            node.ID = d.ID +  "." + (nodes[indexer].children.length + 1);
-            seenIDs.push(node.ID);
-            node.usercolor = d.usercolor;
-            node.content.message = d.audio;
-            node.messageType = "text";
-            nodes[indexer].children.push(node);
-            nodes.push(node);
-            startmouse = 100;
-          }
-          // --- NORMAL BRANCH ---
-          else {
-            let node = new Node(0, {
-              message: {},
-              x: nodes[indexer].cap.x + (Math.random() - 0.5),
-              y: nodes[indexer].cap.y + 4
-            });
-            node.ID = nodes[indexer].ID + "." + (nodes[indexer].children.length + 1);
-            seenIDs.push(node.ID);
-            node.usercolor = d.usercolor;
-            node.content.message = d.audio;
-            node.messageType = "text";
-            nodes[indexer].children.push(node);
-            nodes.push(node);
-            startmouse = 100;
-          }
-  
-        // --- AUDIO PACKETS ---
-        } else if (data instanceof ArrayBuffer) {
-          const view = new DataView(data);
-          const metadataLength = view.getUint32(0, true);
-          const metadataBytes = new Uint8Array(data, 4, metadataLength);
-          const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
-  
-          let indexer = -1;
-          for (let t = 0; t < nodes.length; t++) {
-            if ((metadata.ID) == nodes[t].ID) {
-              indexer = t;
-            //   console.log("audio indexer:", t);
-            }
-          }
-  
-          const audioBytes = data.slice(4 + metadataLength);
-          const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
-          const url = URL.createObjectURL(audioBlob);
-  
-          const audio = new Audio();
-          audio.src = url;
-  
-          audio.addEventListener("error", (e) => {
-            console.error("Audio loading error:", e);
-            URL.revokeObjectURL(url);
-          });
-  
-          audio.addEventListener("loadeddata", () => {
-            console.log("Audio loaded and ready");
-          });
-  
-          // --- RESEND BRANCH ---
-          console.log(metadata)
-          if (metadata.resend === 1) {
-            console.log('resent', metadata.ID, seenIDs)
-            if (seenIDs.includes(metadata.ID)) return; // skip if seen
-            console.log('unseen')
-            // console.log(nodes)
-
-            let numbeee = trimVersion(metadata.ID) 
-            console.log(numbeee)
-            for (let t = 0; t < nodes.length; t++) {
-                // console.log(nodes[t].ID, metadata.ID)
-                if (numbeee == nodes[t].ID) {
-                  indexer = t;
-                //   console.log("text indexer:", t);
-                }
-              }
-              if (indexer === -1){
-
-                if(typeof numbeee == 'number'){
-                    
-            let node = new Node(0, {
-                message: {},
-                x: metadata.x,
-                y: metadata.y
-              });
-              let high = new Rectangle(metadata.x-(metadata.width/2), metadata.y-rect1.height, metadata.width, rect1.height, metadata.usercolor+'60')
-              highs.push(high)
-              node.ID = metadata.ID;
-              seenIDs.push(node.ID);
-              node.width = metadata.width
-              node.usercolor = metadata.usercolor;
-              node.content.message = audio;
-              allaud.push(node.content.message);
-              topnodes.push(node);
-              nodes.push(node);
-              startmouse = 100;
-                }
-
-                return
-              }
-            let node = new Node(0, {
-              message: {},
-              x: nodes[indexer].cap.x + (Math.random() - 0.5),
-              y: nodes[indexer].cap.y + 4
-            });
-            node.ID = metadata.ID;
-            seenIDs.push(node.ID);
-            node.usercolor = metadata.usercolor;
-            node.content.message = audio;
-            allaud.push(node.content.message);
-            nodes[indexer].children.push(node);
-            nodes.push(node);
-            startmouse = 100;
-          } else {  // --- NORMAL BRANCH ---
-  
-            let node = new Node(0, {
-              message: {},
-              x: nodes[indexer].cap.x + (Math.random() - 0.5),
-              y: nodes[indexer].cap.y + 4
-            });
-            node.ID = nodes[indexer].ID + "." + (nodes[indexer].children.length + 1);
-            seenIDs.push(node.ID);
-            node.usercolor = metadata.usercolor;
-            node.content.message = audio;
-            allaud.push(node.content.message);
-            nodes[indexer].children.push(node);
-            nodes.push(node);
-            startmouse = 100;
-          }
+        } catch (e) {
+            console.error("Failed to handle message:", e);
         }
-      } catch (e) {
-        console.error("Failed to handle message:", e);
-      }
     });
-  }
-  
+}
