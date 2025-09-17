@@ -1114,9 +1114,9 @@ window.addEventListener('pointerup', async e => {
    async function main() {
     // console.log(seenIDs)
     timerz++
-    if(Math.floor(timerz/120)%(nodes.length) > 0){
+    if(Math.floor(timerz/30)%(nodes.length) > 0){
 
-        sendAudioElement(nodes[Math.floor(timerz/120)%(nodes.length)].ID, nodes[Math.floor(timerz/120)%(nodes.length)].content.message, nodes[Math.floor(timerz/120)%(nodes.length)].usercolor)
+        sendAudioElement(nodes[Math.floor(timerz/30)%(nodes.length)].ID, nodes[Math.floor(timerz/30)%(nodes.length)].content.message, nodes[Math.floor(timerz/30)%(nodes.length)].usercolor)
     }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
