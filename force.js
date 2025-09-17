@@ -917,15 +917,15 @@ class Node {
             }
 
         }
-        this.offset.radius *= 10
+        this.offset.radius *= 14
         // this.offset.radius = 12
-        this.offset.radius += Math.max(30 + (10 - (radsnap.hypotenuse() / 1)) / 10, 12)
+        this.offset.radius += Math.max(30 + (10 - (radsnap.hypotenuse() / 1)) / 10, 7)
         if (this.childing == 1) {
-            this.offset.radius += 10
-            this.offset.radius /= 11
+            this.offset.radius += 14
+            this.offset.radius /= 15
         } else {
 
-            this.offset.radius /= 11
+            this.offset.radius /= 15
         }
 
     }
