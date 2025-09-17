@@ -410,7 +410,7 @@
         canvas.style.background = style
         window.setInterval(function () {
             main()
-        }, 5)
+        }, 40)
         document.addEventListener('keydown', (event) => {
             // if(event.key  == ' '){
                 event.preventDefault()
@@ -534,7 +534,7 @@ window.addEventListener('pointerup', async e => {
                     });
 
                     let nodei = new Node(0, {
-                        message: {},
+                        message: {}, 
                         x: holdTarget.cap.x + (Math.random() - 0.5),
                         y: holdTarget.cap.y + 4
                     });
@@ -591,47 +591,64 @@ window.addEventListener('pointerup', async e => {
         }
     }
 });
+
 async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
-  if (st2 < st1) {
-    [st1, st2] = [st2, st1];
+    if (st2 < st1) [st1, st2] = [st2, st1];
+  
+    let high = new Rectangle(st1, rect1.y, st2 - st1, rect1.height, coloron + '60');
+    highs.push(high);
+  
+    console.log("pixel range:", st1, st2);
+  
+    // Decode to get duration
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const arrayBuffer = await fileon.arrayBuffer();
+    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+    const duration = decoded.duration;
+  
+    let srat1 = (st1 / 1280) * duration;
+    let srat2 = (st2 / 1280) * duration;
+  
+    if (srat2 <= srat1) {
+      console.warn("Invalid slice", srat1, srat2);
+      return;
+    }
+  
+    // Clip audio -> returns a Blob
+    let audioBlob = await clipAudio(fileon, srat1, srat2);
+  
+    // Wrap in an Audio element, like stopRecording does
+    const url = URL.createObjectURL(audioBlob);
+    const audio = new Audio();
+    audio.src = url;
+    audio.addEventListener("error", e => {
+      console.error("Audio loading error:", e);
+      URL.revokeObjectURL(url);
+    });
+  
+    let nodei = new Node(0, {
+      message: {}, 
+      x: (st1 + st2) / 2,
+      y: rect1.y + rect1.height
+    });
+  
+    nodei.color = coloron;
+    nodei.ID = Math.floor((st1 + st2) / 2);
+  
+    nodei.content.message = audio;
+    nodei.messageType = "audio";
+    nodei.audioResult = { audioBlob }; // keep original blob like stopRecording
+  
+    allaud.push(audio);
+    topnodes.push(nodei);
+    nodes.push(nodei);
+    nodei.width = st2-st1
+  
+    seenIDs.push(nodei.ID)
+    // optional: send it over socket like your recording
+    sendAudioElement(nodei.ID, audio, nodei.usercolor, nodei.body.x, nodei.body.y, st2-st1);
   }
-
-  let high = new Rectangle(st1, rect1.y, st2 - st1, rect1.height, coloron + '60');
-  highs.push(high);
-
-  console.log("pixel range:", st1, st2);
-
-  // First decode the file to find its duration
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const arrayBuffer = await fileon.arrayBuffer();
-  const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-  const duration = decoded.duration;
-
-  // map pixel coordinates -> seconds
-  let srat1 = (st1 / 1280) * duration;
-  let srat2 = (st2 / 1280) * duration;
-
-  if (srat2 <= srat1) {
-    console.warn("Invalid slice", srat1, srat2);
-    return;
-  }
-
-  // now clip using the same file (File/Blob)
-  let sutie = await clipAudio(fileon, srat1, srat2);
-
-  let nodei = new Node(0, {
-    message: sutie,
-    x: (st1 + st2) / 2,
-    y: rect1.y + rect1.height
-  });
-
-  nodei.color = coloron;
-  nodei.ID = Math.floor((st1 + st2) / 2);
-
-  allaud.push(nodei.content.message);
-  topnodes.push(nodei);
-  nodes.push(nodei);
-}
+  
 
   
 
@@ -684,15 +701,17 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
         }
         return color;
     }
+    let coloron = getRandomColor()
     let worldcolor = 'olive'
     nodeid = 0
     class Node {
         constructor(type, content){
-            this.usercolor = '#88bb00'
+            this.width = -1
+            this.usercolor = coloron
             this.touched = 0
             this.ID = nodeid
             seenIDs.push(nodeid)
-            nodeid++
+            // nodeid++
             this.body = {}
             this.body.type = type
             this.content = content
@@ -1161,7 +1180,7 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
         startRecording()
     }
     function trimVersion(input) {
-        if (input === 0) return 0; // numeric 0 stays 0
+        if (typeof input == 'number') return input; // numeric 0 stays 0
       
         if (typeof input === "string") {
           if (input === "0") return 0; // string "0" becomes numeric 0
@@ -1173,11 +1192,10 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
         throw new Error("Input must be a string or 0");
       }
       
-    let coloron = getRandomColor()
     let pausedex = -1
     let session =( Math.random()*100000)
 
-    async function sendAudioElement(id, audioElement, colorinn) {
+    async function sendAudioElement(id, audioElement, colorin, xin=320, yin=320, width= -1) {
         if (!audioElement || !audioElement.src) {
           console.error("sendAudioElement: missing audio element or src", audioElement);
           return;
@@ -1191,7 +1209,7 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
       
           // Encode metadata
           console.log(id)
-          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorinn, resend:1 });
+          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorin+(width>-1?'':''), resend:1, x:xin, y:yin,width:width});
           const encoder = new TextEncoder();
           const metadataBytes = encoder.encode(metadata);
       
@@ -1283,58 +1301,43 @@ async function makeNodeFromClip(st1, st2, rect1, coloron, fileon) {
     // const fileInput = document.querySelector("#audioFileInput");
     // const canvas = document.querySelector("#waveformCanvas");
     // fileInput.addEventListener("change", e => visualizeAudio(e.target.files[0], canvas, 50, 50, 400, 100));
-
-    async function clipAudio(fileOrAudio, startTime, endTime) {
+    async function clipAudio(fileOrBlob, startTime, endTime) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let arrayBuffer;
       
-        // Case 1: <audio> element
-        if (fileOrAudio instanceof HTMLAudioElement) {
-          // fetch its source into an ArrayBuffer
-          const response = await fetch(fileOrAudio.src);
-          arrayBuffer = await response.arrayBuffer();
-        } 
-        // Case 2: File/Blob
-        else if (fileOrAudio instanceof Blob) {
-          arrayBuffer = await fileOrAudio.arrayBuffer();
+        if (fileOrBlob instanceof Blob) {
+          arrayBuffer = await fileOrBlob.arrayBuffer();
         } else {
-          throw new Error("clipAudio: expected File/Blob or <audio> element");
+          throw new Error("clipAudio expects a File or Blob");
         }
       
-        // Decode audio
         const decoded = await audioCtx.decodeAudioData(arrayBuffer);
       
-        // Clamp times
         startTime = Math.max(0, startTime);
         endTime = Math.min(decoded.duration, endTime);
-        if (endTime <= startTime) {
-          throw new Error(`Invalid clip range: start=${startTime}, end=${endTime}`);
-        }
+        if (endTime <= startTime) throw new Error("Invalid clip range");
       
         const duration = endTime - startTime;
         const sampleRate = decoded.sampleRate;
         const channels = decoded.numberOfChannels;
       
-        // Create buffer
         const clipped = audioCtx.createBuffer(
           channels,
           Math.floor(duration * sampleRate),
           sampleRate
         );
       
-        // Copy samples
         for (let ch = 0; ch < channels; ch++) {
-          const channelData = decoded.getChannelData(ch).subarray(
+          const data = decoded.getChannelData(ch).subarray(
             Math.floor(startTime * sampleRate),
             Math.floor(endTime * sampleRate)
           );
-          clipped.copyToChannel(channelData, ch);
+          clipped.copyToChannel(data, ch);
         }
       
-        // Convert back to playable Audio element
-        const wavBlob = audioBufferToWav(clipped);
-        const url = URL.createObjectURL(wavBlob);
-        return new Audio(url);
+        // convert AudioBuffer -> WAV Blob
+        const wavBlob = audioBufferToWav(clipped); // same helper as before
+        return wavBlob; // <-- return a Blob
       }
       
 // helper: convert AudioBuffer → WAV Blob
@@ -1414,7 +1417,7 @@ function audioBufferToWav(buffer) {
 
     if(Math.floor(timerz/30)%(nodes.length) > 0){
 
-        sendAudioElement(nodes[Math.floor(timerz/30)%(nodes.length)].ID, nodes[Math.floor(timerz/30)%(nodes.length)].content.message, nodes[Math.floor(timerz/30)%(nodes.length)].usercolor)
+        sendAudioElement(nodes[Math.floor(timerz/30)%(nodes.length)].ID, nodes[Math.floor(timerz/30)%(nodes.length)].content.message, nodes[Math.floor(timerz/30)%(nodes.length)].usercolor,nodes[Math.floor(timerz/30)%(nodes.length)].cap.x, nodes[Math.floor(timerz/30)%(nodes.length)].cap.y, nodes[Math.floor(timerz/30)%(nodes.length)].width)
     }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
@@ -1617,10 +1620,36 @@ async function sendAudioObject(id, file) {
             for (let t = 0; t < nodes.length; t++) {
                 if ((d.ID) == nodes[t].ID) {
                   indexer = t;
-                  console.log("text indexer:", t);
+                //   console.log("text indexer:", t);
                 }
               }
-              if (indexer === -1) return;
+              
+              if (indexer === -1){
+
+                if(typeof d.ID == 'number'){
+                    
+            let node = new Node(0, {
+                message: {},
+                x: d.x,
+                y: d.y
+              });
+              let high = new Rectangle(d.x, d.y-rect1.height, d.width, rect1.height, d.usercolor+'60')
+              highs.push(high)
+              node.ID = metadata.ID;
+              node.width = d.width
+              seenIDs.push(node.ID);
+              node.usercolor = d.usercolor;
+              node.content.message = audio;
+              allaud.push(node.content.message);
+              nodes.push(node);
+              topnodes.push(node);
+              startmouse = 100;
+                }
+
+                return
+              }
+
+              
             let node = new Node(0, {
               message: {},
               x: nodes[indexer].cap.x + (Math.random() - 0.5),
@@ -1663,7 +1692,7 @@ async function sendAudioObject(id, file) {
           for (let t = 0; t < nodes.length; t++) {
             if ((metadata.ID) == nodes[t].ID) {
               indexer = t;
-              console.log("audio indexer:", t);
+            //   console.log("audio indexer:", t);
             }
           }
   
@@ -1689,17 +1718,40 @@ async function sendAudioObject(id, file) {
             console.log('resent', metadata.ID, seenIDs)
             if (seenIDs.includes(metadata.ID)) return; // skip if seen
             console.log('unseen')
-            console.log(nodes)
+            // console.log(nodes)
             let numbeee = trimVersion(metadata.ID) 
             console.log(numbeee)
             for (let t = 0; t < nodes.length; t++) {
-                console.log(nodes[t].ID, metadata.ID)
+                // console.log(nodes[t].ID, metadata.ID)
                 if (numbeee == nodes[t].ID) {
                   indexer = t;
-                  console.log("text indexer:", t);
+                //   console.log("text indexer:", t);
                 }
               }
-              if (indexer === -1) return;
+              if (indexer === -1){
+
+                if(typeof numbeee == 'number'){
+                    
+            let node = new Node(0, {
+                message: {},
+                x: metadata.x,
+                y: metadata.y
+              });
+              let high = new Rectangle(metadata.x-(metadata.width/2), metadata.y-rect1.height, metadata.width, rect1.height, metadata.usercolor+'60')
+              highs.push(high)
+              node.ID = metadata.ID;
+              seenIDs.push(node.ID);
+              node.width = metadata.width
+              node.usercolor = metadata.usercolor;
+              node.content.message = audio;
+              allaud.push(node.content.message);
+              topnodes.push(node);
+              nodes.push(node);
+              startmouse = 100;
+                }
+
+                return
+              }
             let node = new Node(0, {
               message: {},
               x: nodes[indexer].cap.x + (Math.random() - 0.5),
