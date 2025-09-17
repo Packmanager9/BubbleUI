@@ -7,6 +7,9 @@
             t += 9
         }
     }
+    let seenIDs = []
+    let offset = {}
+    offset.x = 0
     let video_recorder 
     let recording = 0
     const gamepadAPI = {
@@ -367,7 +370,7 @@
         canvas.style.background = style
         window.setInterval(function () {
             main()
-        }, 1)
+        }, 5)
         document.addEventListener('keydown', (event) => {
             // if(event.key  == ' '){
                 event.preventDefault()
@@ -384,6 +387,7 @@ let holdTarget = null;
 let holdTimeout = null;
 let didHold = false;
 const HOLD_DELAY = 250; // ms to count as a "hold"
+let stronko = '' 
 
 window.addEventListener('pointerdown', e => {
     FLEX_engine = canvas.getBoundingClientRect();
@@ -460,12 +464,16 @@ window.addEventListener('pointerup', async e => {
                         x: holdTarget.cap.x + (Math.random() - 0.5),
                         y: holdTarget.cap.y + 4
                     });
+                    nodei.ID = holdTarget.ID +'.'+( holdTarget.children.length+1)
+                    seenIDs.push(nodei.ID)
+                    seenIDs.push(holdTarget.ID)
 
                     nodei.content.message = audio;
                     nodei.messageType = "audio";
                     nodei.audioResult = audioResult;
 
                     sendAudioObject(holdTarget.ID, audioResult);
+
 
                     allaud.push(audioResult);
                     holdTarget.children.push(nodei);
@@ -565,6 +573,7 @@ window.addEventListener('pointerup', async e => {
             this.usercolor = '#88bb00'
             this.touched = 0
             this.ID = nodeid
+            seenIDs.push(nodeid)
             nodeid++
             this.body = {}
             this.body.type = type
@@ -1035,8 +1044,6 @@ window.addEventListener('pointerup', async e => {
     let movedMouse= 1
     let startmouse= 100 //100
 
-    let offset = {}
-    offset.x = 0
     let timespeed = 20
     let timeon = 0
     let addingOn = {}
@@ -1046,11 +1053,67 @@ window.addEventListener('pointerup', async e => {
         adding = 1
         startRecording()
     }
-
+    function trimVersion(input) {
+        if (input === 0) return 0; // numeric 0 stays 0
+      
+        if (typeof input === "string") {
+          if (input === "0") return 0; // string "0" becomes numeric 0
+      
+          let result = input.slice(0, -2); // remove last two characters
+          return result === "0" ? 0 : result;
+        }
+      
+        throw new Error("Input must be a string or 0");
+      }
+      
     let coloron = getRandomColor()
     let pausedex = -1
-   async function main() {
+    let session =( Math.random()*100000)
 
+    async function sendAudioElement(id, audioElement) {
+        if (!audioElement || !audioElement.src) {
+          console.error("sendAudioElement: missing audio element or src", audioElement);
+          return;
+        }
+        
+        try {
+          // Fetch audio data from the audio element's src (blob/object URL or remote URL)
+          const response = await fetch(audioElement.src);
+          const audioBlob = await response.blob();
+          const audioBuffer = await audioBlob.arrayBuffer();
+      
+          // Encode metadata
+          console.log(id)
+          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: coloron, resend:1 });
+          const encoder = new TextEncoder();
+          const metadataBytes = encoder.encode(metadata);
+      
+          // Combined buffer: [metadata length (4 bytes)] + [metadata] + [audio]
+          const totalLength = 4 + metadataBytes.byteLength + audioBuffer.byteLength;
+          const combined = new Uint8Array(totalLength);
+      
+          // Write metadata length (little-endian)
+          const view = new DataView(combined.buffer);
+          view.setUint32(0, metadataBytes.byteLength, true);
+      
+          // Copy metadata + audio
+          combined.set(metadataBytes, 4);
+          combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
+      
+          // Send
+          ws.send(combined.buffer);
+      
+        //   console.log("Audio element sent successfully, id:", id);
+        } catch (error) { 
+          console.error("Failed to send audio element:", error);
+        }
+      }
+      
+      timerz=0
+
+   async function main() {
+    // console.log(seenIDs)
+    timerz++
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
         canvas_context.clearRect(-1000,-1000,canvas.width*1, canvas.height*1) 
@@ -1082,6 +1145,21 @@ window.addEventListener('pointerup', async e => {
         canvas_context.clearRect(-1000,-1000,canvas.width*100, canvas.height*100) 
         rect1.draw()
 
+
+        // if(timerz >= 1000){
+            // timerz=0
+            // for(let t =0;t<nodes.length;t++){
+            //     if(nodes[t].ID!=0){
+
+            if(Math.floor(timerz/20)%(nodes.length) > 0){
+
+                sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message)
+            }
+                // }
+                // }
+         
+        // }
+        
         for(let t =0;t<topnodes.length;t++){
             drawNodeD(topnodes[t])
         }    
@@ -1090,6 +1168,11 @@ window.addEventListener('pointerup', async e => {
         }       
         for(let t =0;t<nodes.length;t++){
                 nodes[t].offsetting()
+                if(seenIDs.includes(nodes[t].ID)){
+
+                }else{
+                    // seenIDs.push(nodes[t].ID)
+                }
         }
         room.draw()
         if(keysPressed['f']){
@@ -1167,7 +1250,7 @@ ws.onopen = () => {
 async function sendAudioObject(id, file) {
     if (!file || !file.audioBlob) {
       console.error("sendAudioObject: missing audioBlob", file);
-      return;
+      return; 
     }
   
     try {
@@ -1202,33 +1285,83 @@ async function sendAudioObject(id, file) {
   
 
   socketize(ws)
-  
   function socketize(ws) {
     ws.binaryType = "arraybuffer";
   
     ws.addEventListener("message", async ({ data }) => {
       try {
+            console.log(data)
+        // --- TEXT PACKETS ---
         if (typeof data === "string") {
-          // Handle normal text messages
           const d = JSON.parse(data);
-          let node = new Node(0, {
-            message: {},
-            x: nodes[d.ID].cap.x + (Math.random() - 0.5),
-            y: nodes[d.ID].cap.y + 4
-          });
-
-          node.usercolor = d.usercolor
-          node.content.message = d.audio; // This is text, not audio
-          node.messageType = "text";
-          nodes[d.ID].children.push(node);
-          nodes.push(node);
-          startmouse= 100
+          let indexer = -1;
+          for (let t = 0; t < nodes.length; t++) {
+            if ((d.ID) == nodes[t].ID) {
+              indexer = t;
+              console.log("text indexer:", t);
+            }
+          }
+  
+          // if no parent node, bail
+          if (indexer === -1) return;
+  
+          // --- RESEND BRANCH ----
+          console.log(d)
+          if (d.resend === 1) {
+            console.log(seenIDs, d)
+            if (seenIDs.includes(d.ID)) return; // skip if seen
+            for (let t = 0; t < nodes.length; t++) {
+                if ((d.ID) == nodes[t].ID) {
+                  indexer = t;
+                  console.log("text indexer:", t);
+                }
+              }
+              if (indexer === -1) return;
+            let node = new Node(0, {
+              message: {},
+              x: nodes[indexer].cap.x + (Math.random() - 0.5),
+              y: nodes[indexer].cap.y + 4
+            });
+            node.ID = d.ID;
+            seenIDs.push(node.ID);
+            node.usercolor = d.usercolor;
+            node.content.message = d.audio;
+            node.messageType = "text";
+            nodes[indexer].children.push(node);
+            nodes.push(node);
+            startmouse = 100;
+          }
+          // --- NORMAL BRANCH ---
+          else {
+            let node = new Node(0, {
+              message: {},
+              x: nodes[indexer].cap.x + (Math.random() - 0.5),
+              y: nodes[indexer].cap.y + 4
+            });
+            node.ID = nodes[indexer].ID + "." + (nodes[indexer].children.length + 1);
+            seenIDs.push(node.ID);
+            node.usercolor = d.usercolor;
+            node.content.message = d.audio;
+            node.messageType = "text";
+            nodes[indexer].children.push(node);
+            nodes.push(node);
+            startmouse = 100;
+          }
+  
+        // --- AUDIO PACKETS ---
         } else if (data instanceof ArrayBuffer) {
-          // Handle combined metadata + audio
           const view = new DataView(data);
-          const metadataLength = view.getUint32(0, true); // little-endian
+          const metadataLength = view.getUint32(0, true);
           const metadataBytes = new Uint8Array(data, 4, metadataLength);
           const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
+  
+          let indexer = -1;
+          for (let t = 0; t < nodes.length; t++) {
+            if ((metadata.ID) == nodes[t].ID) {
+              indexer = t;
+              console.log("audio indexer:", t);
+            }
+          }
   
           const audioBytes = data.slice(4 + metadataLength);
           const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
@@ -1246,18 +1379,52 @@ async function sendAudioObject(id, file) {
             console.log("Audio loaded and ready");
           });
   
-          let node = new Node(0, {
-            message: {},
-            x: nodes[metadata.ID].cap.x + (Math.random() - 0.5),
-            y: nodes[metadata.ID].cap.y + 4
-          });
+          // --- RESEND BRANCH ---
+          console.log(metadata)
+          if (metadata.resend === 1) {
+            console.log('resent', metadata.ID, seenIDs)
+            if (seenIDs.includes(metadata.ID)) return; // skip if seen
+            console.log('unseen')
+            console.log(nodes)
+            let numbeee = trimVersion(metadata.ID) 
+            console.log(numbeee)
+            for (let t = 0; t < nodes.length; t++) {
+                console.log(nodes[t].ID, metadata.ID)
+                if (numbeee == nodes[t].ID) {
+                  indexer = t;
+                  console.log("text indexer:", t);
+                }
+              }
+              if (indexer === -1) return;
+            let node = new Node(0, {
+              message: {},
+              x: nodes[indexer].cap.x + (Math.random() - 0.5),
+              y: nodes[indexer].cap.y + 4
+            });
+            node.ID = metadata.ID;
+            seenIDs.push(node.ID);
+            node.usercolor = metadata.usercolor;
+            node.content.message = audio;
+            allaud.push(node.content.message);
+            nodes[indexer].children.push(node);
+            nodes.push(node);
+            startmouse = 100;
+          } else {  // --- NORMAL BRANCH ---
   
-          node.usercolor = metadata.usercolor
-          node.content.message = audio; // store playable audio
-          allaud.push(node.content.message)
-          nodes[metadata.ID].children.push(node);
-          nodes.push(node);
-          startmouse= 100
+            let node = new Node(0, {
+              message: {},
+              x: nodes[indexer].cap.x + (Math.random() - 0.5),
+              y: nodes[indexer].cap.y + 4
+            });
+            node.ID = nodes[indexer].ID + "." + (nodes[indexer].children.length + 1);
+            seenIDs.push(node.ID);
+            node.usercolor = metadata.usercolor;
+            node.content.message = audio;
+            allaud.push(node.content.message);
+            nodes[indexer].children.push(node);
+            nodes.push(node);
+            startmouse = 100;
+          }
         }
       } catch (e) {
         console.error("Failed to handle message:", e);
