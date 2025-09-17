@@ -1415,11 +1415,11 @@ function audioBufferToWav(buffer) {
     }
 
 
-    if(timerz%20 == 0){
+    if(timerz%233 == 0){
 
-        if(nodes[Math.floor(timerz/20)%(nodes.length)].ID != 0){
+        if(nodes[Math.floor(timerz/233)%(nodes.length)].ID != 0){
 
-            sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message, nodes[Math.floor(timerz/20)%(nodes.length)].usercolor,nodes[Math.floor(timerz/20)%(nodes.length)].cap.x, nodes[Math.floor(timerz/20)%(nodes.length)].cap.y, nodes[Math.floor(timerz/20)%(nodes.length)].width)
+            sendAudioElement(nodes[Math.floor(timerz/233)%(nodes.length)].ID, nodes[Math.floor(timerz/233)%(nodes.length)].content.message, nodes[Math.floor(timerz/233)%(nodes.length)].usercolor,nodes[Math.floor(timerz/233)%(nodes.length)].cap.x, nodes[Math.floor(timerz/233)%(nodes.length)].cap.y, nodes[Math.floor(timerz/233)%(nodes.length)].width)
         }
     }
         off_context.clearRect(0,0,1280, 1280) 
