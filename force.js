@@ -808,7 +808,7 @@ window.addEventListener('pointerup', async e => {
 
         function drawNode(node){
             // node.body.x -= .1
-        if(node.type == 0){
+        if(node.type == 0){ //audio react
             circle.x = node.body.x+node.offset.x
             circle.y = node.body.y+node.offset.y
             circle.radius = node.offset.radius
@@ -1322,7 +1322,7 @@ async function sendAudioObject(id, file) {
               x: nodes[indexer].cap.x + (Math.random() - 0.5),
               y: nodes[indexer].cap.y + 4
             });
-            node.ID = d.ID;
+            node.ID = d.ID +  "." + (nodes[indexer].children.length + 1);
             seenIDs.push(node.ID);
             node.usercolor = d.usercolor;
             node.content.message = d.audio;
@@ -1401,7 +1401,7 @@ async function sendAudioObject(id, file) {
               x: nodes[indexer].cap.x + (Math.random() - 0.5),
               y: nodes[indexer].cap.y + 4
             });
-            node.ID = metadata.ID;
+            node.ID = metadata.ID +  "." + (nodes[indexer].children.length + 1);
             seenIDs.push(node.ID);
             node.usercolor = metadata.usercolor;
             node.content.message = audio;
