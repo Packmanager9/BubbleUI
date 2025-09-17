@@ -42,7 +42,7 @@ class TournamentBracket{
         this.rooms = []
         this.unpaired = 0
         this.totalIn = 0
-        for(let t = 535131+(tournaments.length*64); t <  535131+(tournaments.length*64) + Math.ceil(this.size*.5); t++){
+        for(let t = 1000+(tournaments.length*64); t <  1000+(tournaments.length*64) + Math.ceil(this.size*.5); t++){
             this.rooms.push(t)
         }
         this.layer = 0
@@ -341,3 +341,4 @@ wss.on("connection", ws => {
 })
 
 console.log(`BubbleUI server started on port ${PORT}`);
+
