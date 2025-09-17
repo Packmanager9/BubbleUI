@@ -1070,7 +1070,7 @@ window.addEventListener('pointerup', async e => {
     let pausedex = -1
     let session =( Math.random()*100000)
 
-    async function sendAudioElement(id, audioElement) {
+    async function sendAudioElement(id, audioElement, colorinn) {
         if (!audioElement || !audioElement.src) {
           console.error("sendAudioElement: missing audio element or src", audioElement);
           return;
@@ -1084,7 +1084,7 @@ window.addEventListener('pointerup', async e => {
       
           // Encode metadata
           console.log(id)
-          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: coloron, resend:1 });
+          const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorinn, resend:1 });
           const encoder = new TextEncoder();
           const metadataBytes = encoder.encode(metadata);
       
@@ -1116,7 +1116,7 @@ window.addEventListener('pointerup', async e => {
     timerz++
     if(Math.floor(timerz/20)%(nodes.length) > 0){
 
-        sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message)
+        sendAudioElement(nodes[Math.floor(timerz/20)%(nodes.length)].ID, nodes[Math.floor(timerz/20)%(nodes.length)].content.message, nodes[Math.floor(timerz/20)%(nodes.length)].usercolor)
     }
         off_context.clearRect(0,0,1280, 1280) 
         off_context.drawImage(canvas,offset.x, 0, 1280,1280, 0, 0,1280,1280)
