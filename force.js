@@ -1401,7 +1401,7 @@ async function sendAudioObject(id, file) {
               x: nodes[indexer].cap.x + (Math.random() - 0.5),
               y: nodes[indexer].cap.y + 4
             });
-            node.ID = numbeee +  "." + (nodes[indexer].children.length + 1);
+            node.ID = metadata.ID;
             seenIDs.push(node.ID);
             node.usercolor = metadata.usercolor;
             node.content.message = audio;
