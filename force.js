@@ -1410,6 +1410,23 @@ async function main() {
     // console.log(seenIDs)
     timerz++
 
+    if(keysPressed['w']){
+        startmouse = 50
+        topnodes[0].body.y-=10
+    }
+    if(keysPressed['s']){
+        startmouse = 50
+        topnodes[0].body.y+=10
+    }
+
+    if(keysPressed['a']){
+        startmouse = 50
+        topnodes[0].body.x-=10
+    }
+    if(keysPressed['d']){
+        startmouse = 50
+        topnodes[0].body.x+=10
+    }
 
     if (uploaded == 1) {
         uploaded = 0
