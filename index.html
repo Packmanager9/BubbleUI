@@ -18,6 +18,9 @@
 
 
     <script type="module">
+
+let links = []
+let lock = 0
       import * as Tone from "https://cdn.skypack.dev/tone@14.8.49"; 
       const hexNotes = {
   "0": "C0",  "1": "C#2", "2": "D3",  "3": "D#2",
@@ -206,28 +209,7 @@ function visualizeAudioBuffer(audioBuffer, canvas, x = 0, y = 0, width = canvas.
         ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`
         : "ws://localhost:8080"; // fallback for file://
 
-        
-        // --- replace const ws = new WebSocket(wsUrl); ---
-const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true});
-
-// expose minimal `ws` compatibility for the rest of your code:
-const ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
-
-// instead of calling socketize(ws) directly, hook into the wrapper:
-window.onRobustMessage = async (event, rawSocket) => {
-  // re-use the body of your current socketize message handler here.
-  // In your file you already have a long `ws.addEventListener("message", ...)` handler.
-  // move that logic into this function, but replace references to `ws` with `rawSocket` if needed.
-  // For convenience you can also call your existing socketize function body if you refactor it to accept (event, rawSocket).
-  // Example: socketizeMessageHandler(event); // implement socketizeMessageHandler with the same code you used.
-};
-
-// optional: when underlying raw socket opens, attach things that depended on ws.open
-window.onRobustOpen = (rawSocket) => {
-  console.log('robust socket open, rawSocket=', rawSocket);
-  // If other modules depend on ws variable being present, you can set window.ws = rawSocket
-  window.ws = rawSocket;
-};
+      let ws = new WebSocket(wsUrl);
 
 
       // Robust WebSocket wrapper
@@ -353,6 +335,8 @@ function makeRobustWebSocket(wsUrl, opts = {}) {
   };
 }
 
+
+
  
       const synth = new Tone.Synth(); // DO NOT call .toDestination()
  
@@ -401,7 +385,7 @@ for (let t = 0; t < 10000000; t++) {
 let highs = []
 
 let made = 0
-let seenIDs = []
+let seenIDs = new Set()
 let movedMouse = 1
 let startmouse = 50 //100
 let fileon = false
@@ -1013,8 +997,8 @@ let nodei = new Node(0, {
     y: holdTarget.cap.y + 4
 });
 nodei.ID = holdTarget.ID + coloron + '.' + (holdTarget.children.length + 1);
-seenIDs.push(nodei.ID);
-seenIDs.push(holdTarget.ID);
+seenIDs.add(nodei.ID);
+seenIDs.add(holdTarget.ID);
 // Merge noise + recording
 const toneBuffer = await makenoise(coloron);                          // generate notes
 const recordedBuffer = await blobToAudioBuffer(audioResult.audioBlob); // decode recording
@@ -1132,7 +1116,7 @@ sendAudioObject(holdTarget.ID, { audioBlob: mergedBlob });
         nodes.push(nodei);
         nodei.width = st2 - st1
 
-        seenIDs.push(nodei.ID)
+        seenIDs.add(nodei.ID)
         // optional: send it over socket like your recording
         sendAudioElement(nodei.ID, audio, nodei.usercolor, nodei.body.x, nodei.body.y, st2 - st1);
     }
@@ -1210,7 +1194,7 @@ class Node {
         this.usercolor = coloron
         this.touched = 0
         this.ID = nodeid
-        seenIDs.push(nodeid)
+        seenIDs.add(nodeid)
         // nodeid++
         this.body = {}
         this.body.type = type
@@ -1836,7 +1820,7 @@ async function sendAudioElement(id, audioElement, colorin, xin = 320, yin = 320,
         combined.set(new Uint8Array(audioBuffer), 4 + metadataBytes.byteLength);
 
         // Send
-        ws.send(combined.buffer);
+        robust.send(combined.buffer);
 
         //   console.log("Audio element sent successfully, id:", id);
     } catch (error) {
@@ -2013,9 +1997,7 @@ function audioBufferToWav(buffer) {
     return new Blob([bufferArray], { type: "audio/wav" });
 }
 
-let lock = 0
 
-let links = []
 async function main() {
 
 if(keysPressed['c']){
@@ -2124,10 +2106,10 @@ if(keysPressed['c']){
         }
         for (let t = 0; t < nodes.length; t++) {
             nodes[t].offsetting()
-            if (seenIDs.includes(nodes[t].ID)) {
+            if (seenIDs.has(nodes[t].ID)) {
 
             } else {
-                // seenIDs.push(nodes[t].ID)
+                // seenIDs.add(nodes[t].ID)
             }
         }
         // room.draw()
@@ -2222,7 +2204,7 @@ async function sendAudioObject(id, file) {
         combined.set(new Uint8Array(audioArrayBuffer), 4 + metadataBytes.byteLength);
 
         // Send slice of buffer to be safe
-        ws.send(combined.buffer.slice(0, totalLength));
+        robust.send(combined.buffer.slice(0, totalLength));
 
         console.log("Audio sent successfully, id:", id);
     } catch (err) {
@@ -2230,203 +2212,250 @@ async function sendAudioObject(id, file) {
     }
 }
 
-socketize(ws)
-function socketize(ws) {
-    ws.binaryType = "arraybuffer";
-
-    ws.addEventListener("message", async ({ data }) => {
-        try {
-            console.log(data)
-            // --- TEXT PACKETS ---
-            if (typeof data === "string") {
-                const d = JSON.parse(data);
-                let indexer = -1;
-                for (let t = 0; t < nodes.length; t++) {
-                    if ((d.ID) == nodes[t].ID) {
-                        indexer = t;
-                        console.log("text indexer:", t);
-                    }
-                }
-
-                // if no parent node, bail
-                if (indexer === -1) return;
-
-                // --- RESEND BRANCH ----
-                console.log(d)
-                if (d.resend === 1) {
-                    console.log(seenIDs, d)
-                    if (seenIDs.includes(d.ID)) return; // skip if seen
-                    for (let t = 0; t < nodes.length; t++) {
-                        if ((d.ID) == nodes[t].ID) {
-                            indexer = t;
-                            //   console.log("text indexer:", t);
-                        }
-                    }
-
-                    if (indexer === -1) {
-
-                        if (typeof d.ID == 'number') {
-
-                            let node = new Node(0, {
-                                message: {},
-                                x: d.x,
-                                y: d.y
-                            });
-                            let high = new Rectangle(d.x, d.y - rect1.height, d.width, rect1.height, d.usercolor + '60')
-                            highs.push(high)
-                            node.ID = metadata.ID;
-                            node.width = d.width
-                            seenIDs.push(node.ID);
-                            node.usercolor = d.usercolor;
-                            node.content.message = audio;
-                            allaud.push(node.content.message);
-                            nodes.push(node);
-                            topnodes.push(node);
-                            startmouse = 50;
-                        }
-
-                        return
-                    }
+// socketize(ws)
 
 
-                    let node = new Node(0, {
-                        message: {},
-                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
-                        y: nodes[indexer].cap.y + 4
-                    });
-                    node.ID = d.ID + d.usercolor+ "." + (nodes[indexer].children.length + 1) ;
-                    seenIDs.push(node.ID);
-                    node.usercolor = d.usercolor;
-                    node.content.message = d.audio;
-                    node.messageType = "text";
-                    nodes[indexer].children.push(node);
-                    nodes.push(node);
-                    startmouse = 50;
-                }
-                // --- NORMAL BRANCH ---
-                else {
-                    let node = new Node(0, {
-                        message: {},
-                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
-                        y: nodes[indexer].cap.y + 4
-                    });
-                    node.ID = nodes[indexer].ID + d.usercolor+ "." + (nodes[indexer].children.length + 1) ;
-                    seenIDs.push(node.ID);
-                    node.usercolor = d.usercolor;
-                    node.content.message = d.audio;
-                    node.messageType = "text";
-                    nodes[indexer].children.push(node);
-                    nodes.push(node);
-                    startmouse = 50;
-                }
 
-                // --- AUDIO PACKETS ---
-            } else if (data instanceof ArrayBuffer) {
-                const view = new DataView(data);
-                const metadataLength = view.getUint32(0, true);
-                const metadataBytes = new Uint8Array(data, 4, metadataLength);
-                const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
 
-                let indexer = -1;
-                for (let t = 0; t < nodes.length; t++) {
-                    if ((metadata.ID) == nodes[t].ID) {
-                        indexer = t;
-                        //   console.log("audio indexer:", t);
-                    }
-                }
 
-                const audioBytes = data.slice(4 + metadataLength);
-                const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
-                const url = URL.createObjectURL(audioBlob);
 
-                const audio = new Audio();
-                audio.src = url;
+// --- replace const ws = new WebSocket(wsUrl); ---
+const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true});
 
-                audio.addEventListener("error", (e) => {
-                    console.error("Audio loading error:", e);
-                    URL.revokeObjectURL(url);
-                });
+// expose minimal `ws` compatibility for the rest of your code:
+ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
 
-                audio.addEventListener("loadeddata", () => {
-                    console.log("Audio loaded and ready");
-                });
+// instead of calling socketize(ws) directly, hook into the wrapper:
+window.onRobustMessage = async (event, rawSocket) => {
+  // ensure global dedupe set exists (do this once at top-level too)
+// seenIDs = seenIDs || new Set();
 
-                // --- RESEND BRANCH ---
-                console.log(metadata)
-                if (metadata.resend === 1) {
-                    console.log('resent', metadata.ID, seenIDs)
-                    if (seenIDs.includes(metadata.ID)) return; // skip if seen
-                    console.log('unseen')
-                    // console.log(nodes)
+rawSocket.binaryType = "arraybuffer";
 
-                    let numbeee = trimVersion(metadata.ID)
-                    console.log(numbeee)
-                    for (let t = 0; t < nodes.length; t++) {
-                        console.log(nodes[t].ID, metadata.ID)
-                        if (numbeee == nodes[t].ID) {
-                            indexer = t;
-                            //   console.log("text indexer:", t);
-                        }
-                    }
-                    if (indexer === -1) {
+rawSocket.addEventListener("message", async (ev) => {
+  try {
+    const data = ev.data;
 
-                        if (typeof numbeee == 'number') {
+    // ---------- TEXT PACKETS ----------
+    if (typeof data === "string") {
+      let d;
+      try { d = JSON.parse(data); }
+      catch (err) { console.warn("received string but failed to parse JSON", err); return; }
 
-                            let node = new Node(0, {
-                                message: {},
-                                x: metadata.x,
-                                y: metadata.y
-                            });
-                            let high = new Rectangle(metadata.x - (metadata.width / 2), metadata.y - rect1.height, metadata.width, rect1.height, metadata.usercolor + '60')
-                            highs.push(high)
-                            node.ID = metadata.ID;
-                            seenIDs.push(node.ID);
-                            node.width = metadata.width
-                            node.usercolor = metadata.usercolor;
-                            node.content.message = audio;
-                            allaud.push(node.content.message);
-                            topnodes.push(node);
-                            nodes.push(node);
-                            startmouse = 50;
-                        }
+      // find parent node index (node that matches d.ID)
+      let indexer = nodes.findIndex(n => n && n.ID == d.ID);
 
-                        return
-                    }
-                    let node = new Node(0, {
-                        message: {},
-                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
-                        y: nodes[indexer].cap.y + 4
-                    });
-                    node.ID = metadata.ID;
-                    seenIDs.push(node.ID);
-                    node.usercolor = metadata.usercolor;
-                    node.content.message = audio;
-                    allaud.push(node.content.message);
-                    nodes[indexer].children.push(node);
-                    nodes.push(node);
-                    startmouse = 50;
-                } else {  // --- NORMAL BRANCH ---
+      // if no parent node, bail early (your original behavior)
+      if (indexer === -1) return;
 
-                    let node = new Node(0, {
-                        message: {},
-                        x: nodes[indexer].cap.x + (Math.random() - 0.5),
-                        y: nodes[indexer].cap.y + 4
-                    });
-                    node.ID = nodes[indexer].ID +metadata.usercolor+ "." + (nodes[indexer].children.length + 1);
-                    seenIDs.push(node.ID);
-                    node.usercolor = metadata.usercolor;
-                    node.content.message = audio;
-                    allaud.push(node.content.message);
-                    nodes[indexer].children.push(node);
-                    nodes.push(node);
-                    startmouse = 50;
-                }
-            }
-        } catch (e) {
-            console.error("Failed to handle message:", e);
+      // RESEND branch
+      if (d.resend === 1) {
+        if (seenIDs.has(d.ID)) return; // already handled
+
+        // If parent node missing, create root node (your original logic)
+        // (note: your original code re-searched nodes; we already have indexer)
+        if (indexer === -1) {
+          if (typeof d.ID === 'number') {
+            const node = new Node(0, {
+              message: {},
+              x: d.x,
+              y: d.y
+            });
+            const high = new Rectangle(d.x, d.y - rect1.height, d.width, rect1.height, d.usercolor + '60');
+            highs.push(high);
+            node.ID = d.ID;               // use d.ID (you previously used metadata.ID but here d is the parsed object)
+            node.width = d.width;
+            seenIDs.add(node.ID);
+            node.usercolor = d.usercolor;
+            node.content.message = d.audio || null;
+            if (node.content.message) allaud.push(node.content.message);
+            nodes.push(node);
+            topnodes.push(node);
+            startmouse = 50;
+          }
+          return;
         }
-    });
-}
+
+        // create child node under parent
+        const childNode = new Node(0, {
+          message: {},
+          x: nodes[indexer].cap.x + (Math.random() - 0.5),
+          y: nodes[indexer].cap.y + 4
+        });
+        // keep ID scheme close to your original
+        childNode.ID = (d.ID) + (d.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        seenIDs.add(childNode.ID);
+        childNode.usercolor = d.usercolor;
+        childNode.content.message = d.audio || null;
+        childNode.messageType = "text";
+        nodes[indexer].children.push(childNode);
+        nodes.push(childNode);
+        startmouse = 50;
+
+      // NORMAL (non-resend) branch
+      } else {
+
+        if (seenIDs.has(d.ID)) return; // already handled
+        // Defensive: ensure indexer valid
+        if (indexer === -1) return;
+
+        const childNode = new Node(0, {
+          message: {},
+          x: nodes[indexer].cap.x + (Math.random() - 0.5),
+          y: nodes[indexer].cap.y + 4
+        });
+        childNode.ID = nodes[indexer].ID + (d.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        seenIDs.add(childNode.ID);
+        childNode.usercolor = d.usercolor;
+        childNode.content.message = d.audio || null;
+        childNode.messageType = "text";
+        nodes[indexer].children.push(childNode);
+        nodes.push(childNode);
+        startmouse = 50;
+      }
+
+    // ---------- AUDIO PACKETS (ArrayBuffer) ----------
+    } else if (data instanceof ArrayBuffer) {
+      const view = new DataView(data);
+      const metadataLength = view.getUint32(0, true);
+      const metadataBytes = new Uint8Array(data, 4, metadataLength);
+      let metadata;
+      try {
+        metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
+      } catch (err) {
+        console.warn("failed to parse metadata from audio packet", err);
+        return;
+      }
+
+      // safe slice for audio bytes
+      const audioBytes = data.slice(4 + metadataLength);
+      const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
+      const url = URL.createObjectURL(audioBlob);
+      const audio = new Audio();
+      audio.src = url;
+
+      audio.addEventListener("error", (e) => {
+        console.error("Audio loading error:", e);
+        URL.revokeObjectURL(url);
+      });
+      audio.addEventListener("loadeddata", () => {
+        // optional debug
+        // console.log("Audio loaded and ready");
+      });
+
+      // RESEND branch
+      if (metadata.resend === 1) {
+        if (seenIDs.has(metadata.ID)) return; // skip if already seen
+
+        // If you use trimVersion to map metadata.ID to a parent ID, keep that
+        const numbeee = typeof trimVersion === 'function' ? trimVersion(metadata.ID) : metadata.ID;
+
+        // find indexer via trimmed version or exact ID
+        let indexer = nodes.findIndex(n => n && (n.ID == numbeee || n.ID == metadata.ID));
+        if (indexer === -1) {
+          // create a root node if trimmed ID is a number (your original behavior)
+          if (typeof numbeee === 'number') {
+            const node = new Node(0, {
+              message: {},
+              x: metadata.x,
+              y: metadata.y
+            });
+            const high = new Rectangle(metadata.x - (metadata.width / 2), metadata.y - rect1.height, metadata.width, rect1.height, metadata.usercolor + '60');
+            highs.push(high);
+            node.ID = metadata.ID;
+            seenIDs.add(node.ID);
+            node.width = metadata.width;
+            node.usercolor = metadata.usercolor;
+            node.content.message = audio;
+            allaud.push(node.content.message);
+            topnodes.push(node);
+            nodes.push(node);
+            startmouse = 50;
+          }
+          return;
+        }
+
+        // attach as child under existing parent
+        const childNode = new Node(0, {
+          message: {},
+          x: nodes[indexer].cap.x + (Math.random() - 0.5),
+          y: nodes[indexer].cap.y + 4
+        });
+        childNode.ID = metadata.ID;
+        seenIDs.add(childNode.ID);
+        childNode.usercolor = metadata.usercolor;
+        childNode.content.message = audio;
+        allaud.push(childNode.content.message);
+        nodes[indexer].children.push(childNode);
+        nodes.push(childNode);
+        startmouse = 50;
+
+      // NORMAL audio branch
+      } else {
+        if (seenIDs.has(metadata.ID)) return; // skip if already seen
+        // find parent indexer
+        let indexer = nodes.findIndex(n => n && n.ID == metadata.ID);
+        if (indexer === -1) {
+          // if no parent, can't attach — bail
+          return;
+        }
+        const childNode = new Node(0, {
+          message: {},
+          x: nodes[indexer].cap.x + (Math.random() - 0.5),
+          y: nodes[indexer].cap.y + 4
+        });
+        childNode.ID = nodes[indexer].ID + (metadata.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        seenIDs.add(childNode.ID);
+        childNode.usercolor = metadata.usercolor;
+        childNode.content.message = audio;
+        allaud.push(childNode.content.message);
+        nodes[indexer].children.push(childNode);
+        nodes.push(childNode);
+        startmouse = 50;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to handle message:", e);
+  }
+
+  // trim seenIDs if it gets too large (evict oldest entries)
+  try {
+    const MAX_SEEN = 50000;
+    if (seenIDs.size > MAX_SEEN) {
+      const toEvict = 10000;
+      const arr = Array.from(seenIDs);
+      for (let i = 0; i < toEvict && arr[i]; i++) seenIDs.delete(arr[i]);
+    }
+  } catch (e) {
+    // don't allow trimming issues to break processing
+    console.warn("seenIDs trim error", e);
+  }
+});
+
+
+
+
+
+
+
+};
+
+// optional: when underlying raw socket opens, attach things that depended on ws.open
+window.onRobustOpen = (rawSocket) => {
+  console.log('robust socket open, rawSocket=', rawSocket);
+  // If other modules depend on ws variable being present, you can set window.ws = rawSocket
+  window.ws = rawSocket;
+};
+
+
+
+
+
+
+
+
+
+
 
 
 
