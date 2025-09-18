@@ -1448,7 +1448,7 @@ async function main() {
     } else if (movedMouse == 1 || startmouse > 0) {
         made--
         startmouse--
-        // movedMouse = 0
+        movedMouse = 0
         canvas_context.clearRect(-1000, -1000, canvas.width * 100, canvas.height * 100)
         rect1.draw()
         if (fileon != false) {
