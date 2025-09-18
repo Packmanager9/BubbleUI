@@ -134,13 +134,13 @@ async function makenoise(hexcode) {
     // First three notes: play normally on time
     chars.slice(0, 3).forEach((ch, i) => {
       const note = hexNotes[ch] || "C4";
-      synth.triggerAttackRelease(note, 0.15, i * 0.25);
+      synth.triggerAttackRelease(note, 0.1, i * 0.20);
     });
 
     // Last three notes: play simultaneously with first three but offset by 0.125s
     chars.slice(3, 6).forEach((ch, i) => {
       const note = hexNotes[ch] || "C4";
-      synth.triggerAttackRelease(note, 0.15, i * 0.25 + 0.125);
+      synth.triggerAttackRelease(note, 0.1, i * 0.20 + 0.1);
     });
 
   }, 4); // offline duration in seconds
@@ -148,7 +148,7 @@ async function makenoise(hexcode) {
   const nativeBuffer = toneAudioBuffer.get ? toneAudioBuffer.get() : toneAudioBuffer._buffer;
 
   // Optional: visualize
-  visualizeAudioBuffer(nativeBuffer, canvas, 50, 50, 400, 100);
+  // visualizeAudioBuffer(nativeBuffer, canvas, 50, 50, 400, 100);
 
   return nativeBuffer;
 }
@@ -521,7 +521,7 @@ class Circle {
     }
     draw() {
         if (this.dragged == 1) {
-            console.log(2)
+            // console.log(2)
             this.x = TIP_engine.x
             this.y = TIP_engine.y
             if (!room.isPointInside(this)) {
@@ -535,7 +535,7 @@ class Circle {
             }
         }
         canvas_context.lineWidth = 2
-        canvas_context.strokeStyle = "black"
+        canvas_context.strokeStyle = "#888888"
         canvas_context.beginPath();
         if (this.radius > 0) {
             canvas_context.arc(this.x, this.y, this.radius, 0, (Math.PI * 2), true)
@@ -671,7 +671,7 @@ class Circle {
         return false
     }
 }
-function setUp(canvas_pass, style = "#888888") {
+function setUp(canvas_pass, style = "#393939") {
     canvas = canvas_pass
     canvas_context = canvas.getContext('2d');
     canvas.style.background = style
@@ -1373,7 +1373,7 @@ function drawNodeD(node) {
             let link = new LineOP(
                 node.cap,
                 node.children[t].cap,
-                node.color,
+                "white", 
                 node.offset.radius / 4
             )
             link.draw()
@@ -1872,7 +1872,9 @@ let lock = 0
 let links = []
 async function main() {
 
-
+if(keysPressed['c']){
+  coloron = getRandomColor()
+}
   if(lock ==1){
     return
   }
