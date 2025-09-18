@@ -97,6 +97,18 @@ function audioBufferToWavBlob(audioBuffer) {
   return new Blob([view], { type: 'audio/wav' });
 }
 
+
+
+let rightClick = 0
+        let dragTarget = {}
+
+        let dragger = {}
+        dragger.x = 0
+        dragger.y = 0
+        
+
+
+
 // --- Generate Tone notes as AudioBuffer ---
 
 let audioLock = 0 //turns off chimes
@@ -690,6 +702,45 @@ function setUp(canvas_pass, style = "#888888") {
 
     let st1 = -1
     let st2 = 0
+    window.addEventListener('contextmenu', e => {
+        FLEX_engine = canvas.getBoundingClientRect();
+        XS_engine = e.clientX - FLEX_engine.left;
+        YS_engine = e.clientY - FLEX_engine.top;
+        TIP_engine.x = XS_engine - offset.x;
+        TIP_engine.y = YS_engine;
+        TIP_engine.body = TIP_engine;
+        e.preventDefault()
+
+
+        let l = new LineOP(TIP_engine, TIP_engine);
+        let min = 99999999;
+        let index = -1;
+        for (let t = 0; t < nodes.length; t++) {
+            l.target = nodes[t].cap;
+            let h = l.hypotenuse();
+            if (h <= min && h <= nodes[t].offset.radius) {
+                index = t;
+                min = h;
+            }
+        }
+
+
+
+        if (index > -1) {
+        rightClick = 1
+        dragTarget = nodes[index];
+
+        dragger.x = TIP_engine.x
+        dragger.y = TIP_engine.y
+        dragger.xbolt = 0
+        dragger.ybolt = 0
+        }
+        
+
+    })
+
+
+
     window.addEventListener('pointerdown', e => {
         FLEX_engine = canvas.getBoundingClientRect();
         XS_engine = e.clientX - FLEX_engine.left;
@@ -697,6 +748,12 @@ function setUp(canvas_pass, style = "#888888") {
         TIP_engine.x = XS_engine - offset.x;
         TIP_engine.y = YS_engine;
         TIP_engine.body = TIP_engine;
+
+    if (e.button !== 0) return;
+        if(rightClick == 1){
+          return
+        }
+        rightClick = 0
 
         room.check(TIP_engine);
         if (rect1.isPointInside(TIP_engine)) {
@@ -750,6 +807,17 @@ function setUp(canvas_pass, style = "#888888") {
         TIP_engine.x = XS_engine - offset.x;
         TIP_engine.y = YS_engine;
         TIP_engine.body = TIP_engine;
+
+        if(rightClick == 1){
+          dragTarget = {}
+          dragger.x =0 
+          dragger.y =0 
+          rightClick = 0
+          return
+        }
+        if (e.button !== 0) return;
+
+
         if (rect1.isPointInside(TIP_engine)) {
 
 
@@ -939,6 +1007,16 @@ sendAudioObject(holdTarget.ID, { audioBlob: mergedBlob });
         TIP_engine.x = XS_engine - offset.x
         TIP_engine.y = YS_engine
         TIP_engine.body = TIP_engine
+
+
+
+        dragger.xbolt -= dragger.x - TIP_engine.x
+        dragger.ybolt -= dragger.y - TIP_engine.y
+
+        dragger.x = TIP_engine.x
+        dragger.y = TIP_engine.y
+
+
         let l = new LineOP(ft, TIP_engine)
         if (l.hypotenuse() > 1) {
             movedMouse = 1
@@ -1014,10 +1092,30 @@ class Node {
         this.childing = 0
         // this.parent.cap = new Point(this.body.x+1, this.body.y+1)
     }
+    dragchild(){
+
+      for (let t = 0; t < this.children.length; t++) {
+        this.children[t].body.x += dragger.xbolt
+          this.children[t].body.y += dragger.ybolt
+          this.children[t].dragchild()
+          }
+    }
     offsetting() {
+        if(this == dragTarget){
+          this.body.x += dragger.xbolt
+          this.body.y += dragger.ybolt
+          
+            this.dragchild()
+            dragger.xbolt = 0
+            dragger.ybolt = 0
+        }
         if (topnodes.includes(this)) {
             return
         }
+
+
+
+
         this.hash = {}
         for (let t = 0; t < nodes.length; t++) {
             if (this != nodes[t]) {
@@ -1242,6 +1340,8 @@ function drawNode(node) {
 
         if (node == addingOn) {
             circle.color = '#ffffff'
+        } else if (node == dragTarget) {
+            circle.color = '#444944'
         } else {
             circle.color = node.usercolor + (node.touched == 0 ? '' : 'a0')
         }
@@ -1776,7 +1876,7 @@ async function main() {
   if(lock ==1){
     return
   }
-
+ 
 // makenoise(getRandomColor())
 // return
     links = []
