@@ -206,7 +206,153 @@ function visualizeAudioBuffer(audioBuffer, canvas, x = 0, y = 0, width = canvas.
         ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`
         : "ws://localhost:8080"; // fallback for file://
 
-      const ws = new WebSocket(wsUrl);
+        
+        // --- replace const ws = new WebSocket(wsUrl); ---
+const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true});
+
+// expose minimal `ws` compatibility for the rest of your code:
+const ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
+
+// instead of calling socketize(ws) directly, hook into the wrapper:
+window.onRobustMessage = async (event, rawSocket) => {
+  // re-use the body of your current socketize message handler here.
+  // In your file you already have a long `ws.addEventListener("message", ...)` handler.
+  // move that logic into this function, but replace references to `ws` with `rawSocket` if needed.
+  // For convenience you can also call your existing socketize function body if you refactor it to accept (event, rawSocket).
+  // Example: socketizeMessageHandler(event); // implement socketizeMessageHandler with the same code you used.
+};
+
+// optional: when underlying raw socket opens, attach things that depended on ws.open
+window.onRobustOpen = (rawSocket) => {
+  console.log('robust socket open, rawSocket=', rawSocket);
+  // If other modules depend on ws variable being present, you can set window.ws = rawSocket
+  window.ws = rawSocket;
+};
+
+
+      // Robust WebSocket wrapper
+function makeRobustWebSocket(wsUrl, opts = {}) {
+  const {
+    maxBackoff = 30000,     // max reconnection delay
+    baseBackoff = 500,      // initial reconnection delay
+    heartbeatInterval = 20000, // send ping every 20s (set 0 to disable)
+    debug = true
+  } = opts;
+
+  let raw = null;
+  let sendQueue = []; // Array of {data, isBinary}
+  let ready = false;
+  let closedByUser = false;
+  let reconnectAttempts = 0;
+  let heartbeatTimer = null;
+
+  function log(...a){ if(debug) console.log('[robust-ws]', ...a); }
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    if (!heartbeatInterval) return;
+    heartbeatTimer = setInterval(() => {
+      if(raw && raw.readyState === WebSocket.OPEN){
+        // lightweight ping text — your server should reply or keepalive
+        try { raw.send(JSON.stringify({type:'__ping__'})); }
+        catch(e){ log('heartbeat send failed', e); }
+      }
+    }, heartbeatInterval);
+  }
+  function stopHeartbeat() {
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  }
+
+  function createSocket() {
+    raw = new WebSocket(wsUrl);
+    raw.binaryType = "arraybuffer";
+    ready = false;
+
+    raw.addEventListener('open', () => {
+      log('open');
+      reconnectAttempts = 0;
+      ready = true;
+      // flush queue
+      while(sendQueue.length && raw.readyState === WebSocket.OPEN){
+        const item = sendQueue.shift();
+        try {
+          raw.send(item.data);
+        } catch (e) {
+          log('error sending queued item, requeueing', e);
+          sendQueue.unshift(item);
+          break;
+        }
+      }
+      startHeartbeat();
+
+      // re-attach your existing socketize logic if needed by calling your handler
+      if (typeof window.onRobustOpen === 'function') window.onRobustOpen(raw);
+    });
+
+    raw.addEventListener('message', (m) => {
+      // forward to existing handlers
+      if (typeof window.onRobustMessage === 'function') {
+        window.onRobustMessage(m, raw);
+      } else {
+        // fallback: call socketize message handler if it reads 'ws' variable
+        log('message received - no onRobustMessage hook installed');
+      }
+    });
+
+    raw.addEventListener('error', (e) => {
+      log('socket error', e);
+      // keep going — 'close' will follow usually
+    });
+
+    raw.addEventListener('close', (ev) => {
+      log('closed', ev.code, ev.reason);
+      stopHeartbeat();
+      ready = false;
+      if (closedByUser) {
+        log('closed by user — not reconnecting');
+        return;
+      }
+      // exponential backoff
+      reconnectAttempts++;
+      const backoff = Math.min(maxBackoff, baseBackoff * Math.pow(1.8, reconnectAttempts));
+      log('reconnecting in', backoff, 'ms');
+      setTimeout(() => {
+        createSocket();
+      }, backoff | 0);
+    });
+  }
+
+  createSocket();
+
+  return {
+    send(data) {
+      // Accept either ArrayBuffer/TypedArray/Blob or string
+      if (!data) return;
+      // If socket is open, attempt send synchronously and catch errors
+      if (raw && raw.readyState === WebSocket.OPEN) {
+        try {
+          raw.send(data);
+          return;
+        } catch (e) {
+          log('send failed, queueing', e);
+          sendQueue.push({data});
+        }
+      } else {
+        // queue until open
+        sendQueue.push({data});
+      }
+    },
+    close(code = 1000, reason) {
+      closedByUser = true;
+      stopHeartbeat();
+      if (raw) raw.close(code, reason);
+    },
+    get raw() { return raw; },
+    // useful for tests: inspect queue length
+    get queueLength(){ return sendQueue.length; }
+  };
+}
+
  
       const synth = new Tone.Synth(); // DO NOT call .toDestination()
  
