@@ -111,7 +111,7 @@ let rightClick = 0
 
 // --- Generate Tone notes as AudioBuffer ---
 
-let audioLock = 0 //turns off chimes
+let audioLock = 1 //turns off chimes
 async function makenoise(hexcode) {
   // If locked, return empty buffer
   if (audioLock === 1) {
@@ -671,7 +671,7 @@ class Circle {
         return false
     }
 }
-function setUp(canvas_pass, style = "#393939") {
+function setUp(canvas_pass, style = "#493939") {
     canvas = canvas_pass
     canvas_context = canvas.getContext('2d');
     canvas.style.background = style
