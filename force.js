@@ -481,7 +481,7 @@ function setUp(canvas_pass, style = "#888888") {
             // Start hold timer
             holdTimeout = setTimeout(() => {
                 addingto(holdTarget); // immediate effect on hold
-                startmouse = 10;
+                startmouse = 100;
                 didHold = true; // mark that a hold occurred
             }, HOLD_DELAY);
         }
@@ -514,7 +514,7 @@ function setUp(canvas_pass, style = "#888888") {
             if (didHold && holdTarget) {
                 // AFTER HOLD → run your full audio block
                 // if (keysPressed[' ']) {
-                startmouse = 10;
+                startmouse = 100;
 
                 if (adding == 1) {
                     const audioResult = await stopRecording();
@@ -747,7 +747,7 @@ class Node {
                 this.l.target = nodes[t].cap
 
                 this.hash[t] = {}
-                this.hash[t].distance = Math.max(this.l.hypotenuse() + 1, 10)
+                this.hash[t].distance = Math.max(this.l.hypotenuse() + 1, 1)
                 this.hash[t].x = nodes[t].cap.x
                 this.hash[t].y = nodes[t].cap.y
                 this.hash[t].radius = nodes[t].offset.radius
@@ -762,19 +762,21 @@ class Node {
         for (let t = 0; t < keys.length; t++) {
             force.x = 0
             force.y = 0
-            if (this.hash[keys[t]].distance < this.offset.radius + this.hash[keys[t]].radius) {
+            // for(let w= 0;w<3;w++){
+                
+            if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)+10) {
 
                 force.x += (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
                 force.y += (this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
 
 
                 if (this.childos != 1) {
-                    this.offset.x -= force.x / .6
-                    this.offset.y -= force.y / .6
+                    this.offset.x -= force.x / .4
+                    this.offset.y -= force.y / 10
                 } else {
 
-                    this.offset.x -= force.x / 5.6
-                    this.offset.y -= force.y / 5.6
+                    this.offset.x -= force.x / 3.6
+                    this.offset.y -= force.y / 15.6
                 }
             } else {
                 if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius) * 1.1) {
@@ -796,6 +798,7 @@ class Node {
                     }
                 }
             }
+            // }
         }
 
         if (!(topnodes.includes(this))) {
@@ -838,9 +841,9 @@ class Node {
 
             if (l < Math.min(Math.max(this.offset.radius / 1.4, 12), 30) * (1.5 + this.unik)) {
 
-                this.offset.y += .4 * Math.sqrt(this.layer)
+                this.offset.y += .9 * Math.sqrt(this.layer)
             } else {
-                this.offset.y -= .2 * Math.sqrt(this.layer)
+                // this.offset.y -= .2 * Math.sqrt(this.layer)
 
             }
         } else {
@@ -863,10 +866,10 @@ class Node {
             let l = this.children[t].cap.y - this.cap.y
             if (l < Math.min(Math.max(this.offset.radius / 1.4, 12), 30) * (1.5 + this.unik)) {
 
-                this.children[t].offset.y += .4 * Math.sqrt(this.children[t].layer)
+                this.children[t].offset.y += .9 * Math.sqrt(this.children[t].layer)
             } else {
 
-                this.children[t].offset.y -= .2 * Math.sqrt(this.children[t].layer)
+                // this.children[t].offset.y -= .2 * Math.sqrt(this.children[t].layer)
             }
             //     if(l.hypotenuse() > 60){
 
