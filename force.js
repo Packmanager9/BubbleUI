@@ -12,7 +12,7 @@ let highs = []
 let made = 0
 let seenIDs = []
 let movedMouse = 1
-let startmouse = 100 //100
+let startmouse = 50 //100
 let fileon = false
 
 let timespeed = 20
@@ -481,7 +481,7 @@ function setUp(canvas_pass, style = "#888888") {
             // Start hold timer
             holdTimeout = setTimeout(() => {
                 addingto(holdTarget); // immediate effect on hold
-                startmouse = 100;
+                startmouse = 50;
                 didHold = true; // mark that a hold occurred
             }, HOLD_DELAY);
         }
@@ -514,7 +514,7 @@ function setUp(canvas_pass, style = "#888888") {
             if (didHold && holdTarget) {
                 // AFTER HOLD → run your full audio block
                 // if (keysPressed[' ']) {
-                startmouse = 100;
+                startmouse = 50;
 
                 if (adding == 1) {
                     const audioResult = await stopRecording();
@@ -670,10 +670,10 @@ function setUp(canvas_pass, style = "#888888") {
             movedMouse = 1
         }
         if (l.hypotenuse() > 10) {
-            startmouse = 5
+            startmouse = 50
         }
         if (l.hypotenuse() > 50) {
-            startmouse = 40
+            startmouse = 50
         }
         //for moving mouse actions
     }
@@ -731,7 +731,7 @@ class Node {
         this.parent = {}
         this.offset.colorball = worldcolor
         this.latentColor = getRandomColor()
-        this.unik = Math.random() * 3
+        this.unik = 1 //Math.random() * 3
 
         this.childing = 0
         // this.parent.cap = new Point(this.body.x+1, this.body.y+1)
@@ -762,43 +762,43 @@ class Node {
         for (let t = 0; t < keys.length; t++) {
             force.x = 0
             force.y = 0
-            // for(let w= 0;w<3;w++){
+            for(let w= 0;w<15;w++){
                 
-            if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)+10) {
+            if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)+9) {
 
-                force.x += (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
-                force.y += (this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
+                force.x += Math.sign(this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
+                // force.y += Math.sign(this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
 
 
                 if (this.childos != 1) {
-                    this.offset.x -= force.x / .4
-                    this.offset.y -= force.y / 10
+                    this.offset.x -= force.x / 1.5
+                    // this.offset.y -= force.y / 1
                 } else {
 
-                    this.offset.x -= force.x / 3.6
-                    this.offset.y -= force.y / 15.6
+                    this.offset.x -= force.x / 9
+                    // this.offset.y -= force.y / 1.6
                 }
             } else {
                 if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius) * 1.1) {
                     if (this.hash[keys[t]].distance > (this.offset.radius + this.hash[keys[t]].radius) * .1) {
 
 
-                        force.x += (this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
+                        force.x += Math.sign(this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
                         // force.y  += (this.hash[keys[t]].y-(this.body.y+this.offset.y))/this.hash[keys[t]].distance
 
 
                         if (this.childos != 1) {
-                            this.offset.x += force.x / 50
-                            this.offset.y += force.y / 50
+                            this.offset.x += force.x / 300
+                            // this.offset.y += force.y / 50
                         } else {
 
-                            this.offset.x += force.x / 550
-                            this.offset.y += force.y / 550
+                            this.offset.x += force.x / 1500
+                            // this.offset.y += force.y / 550
                         }
                     }
                 }
             }
-            // }
+            }
         }
 
         if (!(topnodes.includes(this))) {
@@ -814,12 +814,12 @@ class Node {
 
 
                         if (this.childos != 1) {
-                            this.offset.x -= force2.x / 2
-                            this.offset.y -= force2.y / 2
+                            this.offset.x -= force2.x / 12
+                            // this.offset.y -= force2.y / 2
                         } else {
 
-                            this.offset.x -= force2.x / 55
-                            this.offset.y -= force2.y / 55
+                            this.offset.x -= force2.x / 300
+                            // this.offset.y -= force2.y / 55
                         }
                     }
                 }
@@ -843,7 +843,7 @@ class Node {
 
                 this.offset.y += .9 * Math.sqrt(this.layer)
             } else {
-                // this.offset.y -= .2 * Math.sqrt(this.layer)
+                this.offset.y -= .2 * Math.sqrt(this.layer)
 
             }
         } else {
@@ -869,7 +869,7 @@ class Node {
                 this.children[t].offset.y += .9 * Math.sqrt(this.children[t].layer)
             } else {
 
-                // this.children[t].offset.y -= .2 * Math.sqrt(this.children[t].layer)
+                this.children[t].offset.y -= .2 * Math.sqrt(this.children[t].layer)
             }
             //     if(l.hypotenuse() > 60){
 
@@ -1648,7 +1648,7 @@ function socketize(ws) {
                             allaud.push(node.content.message);
                             nodes.push(node);
                             topnodes.push(node);
-                            startmouse = 100;
+                            startmouse = 50;
                         }
 
                         return
@@ -1667,7 +1667,7 @@ function socketize(ws) {
                     node.messageType = "text";
                     nodes[indexer].children.push(node);
                     nodes.push(node);
-                    startmouse = 100;
+                    startmouse = 50;
                 }
                 // --- NORMAL BRANCH ---
                 else {
@@ -1683,7 +1683,7 @@ function socketize(ws) {
                     node.messageType = "text";
                     nodes[indexer].children.push(node);
                     nodes.push(node);
-                    startmouse = 100;
+                    startmouse = 50;
                 }
 
                 // --- AUDIO PACKETS ---
@@ -1753,7 +1753,7 @@ function socketize(ws) {
                             allaud.push(node.content.message);
                             topnodes.push(node);
                             nodes.push(node);
-                            startmouse = 100;
+                            startmouse = 50;
                         }
 
                         return
@@ -1770,7 +1770,7 @@ function socketize(ws) {
                     allaud.push(node.content.message);
                     nodes[indexer].children.push(node);
                     nodes.push(node);
-                    startmouse = 100;
+                    startmouse = 50;
                 } else {  // --- NORMAL BRANCH ---
 
                     let node = new Node(0, {
@@ -1785,7 +1785,7 @@ function socketize(ws) {
                     allaud.push(node.content.message);
                     nodes[indexer].children.push(node);
                     nodes.push(node);
-                    startmouse = 100;
+                    startmouse = 50;
                 }
             }
         } catch (e) {
