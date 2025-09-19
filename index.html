@@ -964,7 +964,7 @@ let nodei = new Node(0, {
     x: holdTarget.cap.x + (Math.random() - 0.5),
     y: holdTarget.cap.y + 4
 });
-nodei.ID = holdTarget.ID + coloron + '.' + (holdTarget.children.length + 1);
+nodei.ID = holdTarget.ID + coloron + '.' + (childSearch(holdTarget.children, coloron) + 1);
 seenIDs.add(nodei.ID);
 seenIDs.add(holdTarget.ID);
 // Merge noise + recording
@@ -2268,9 +2268,22 @@ let hovercheck = 1
 hoverTarget = nodes[0]
 
 
-let timestep = 100
+let timestep = 40
 let stopper = 0
-let timeip = 60
+let timeip = 24
+
+function childSearch(children, color){
+
+    let c = 0
+    for(let t= 0;t<children.length;t++){
+        if(children[t].usercolor == color){
+            c++
+        }
+    }
+
+    return c
+
+}
 
 async function main() {
 
@@ -2282,9 +2295,9 @@ async function main() {
         for(let t = 0;t<nodes.length;t++){
             lister.push(nodes[t].ID)
         }
-        ws.send(JSON.stringify({resendList:1,please:lister}))
+        robust.send(JSON.stringify({resendList:1,please:lister}))
         stopper++
-        if(stopper > 10){
+        if(stopper > 20){
             stopper =0
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
@@ -2354,10 +2367,10 @@ async function main() {
       funyk()
   }
 
-  if (timerz % 233 == 0) {
-      if (nodes[Math.floor(timerz / 233) % (nodes.length)].ID != 0) {
-        if(nodes[Math.floor(timerz / 233) % (nodes.length)].sending != 0){
-            sendAudioElement(nodes[Math.floor(timerz / 233) % (nodes.length)].ID, nodes[Math.floor(timerz / 233) % (nodes.length)].content.message, nodes[Math.floor(timerz / 233) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 233) % (nodes.length)].width)
+  if (timerz % 20 == 0) {
+      if (nodes[Math.floor(timerz / 20) % (nodes.length)].ID != 0) {
+        if(nodes[Math.floor(timerz / 20) % (nodes.length)].sending != 0){
+            sendAudioElement(nodes[Math.floor(timerz / 20) % (nodes.length)].ID, nodes[Math.floor(timerz / 20) % (nodes.length)].content.message, nodes[Math.floor(timerz / 20) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 20) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 20) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 20) % (nodes.length)].width)
         }
       }
   }
@@ -2745,7 +2758,7 @@ async function processMessage(workItem) {
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
           y: nodes[indexer].cap.y + 4
         });
-        childNode.ID = (d.ID) + (d.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        childNode.ID = (d.ID) + (d.usercolor || "") + "." + (childSearch(nodes[indexer].children , d.usercolor)+ 1);
         seenIDs.add(childNode.ID);
         childNode.usercolor = d.usercolor;
         childNode.content.message = d.audio || null;
@@ -2765,7 +2778,7 @@ async function processMessage(workItem) {
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
           y: nodes[indexer].cap.y + 4
         });
-        childNode.ID = nodes[indexer].ID + (d.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        childNode.ID = nodes[indexer].ID + (d.usercolor || "") + "." + (childSearch(nodes[indexer].children, d.usercolor)+ 1);
         seenIDs.add(childNode.ID);
         childNode.usercolor = d.usercolor;
         childNode.content.message = d.audio || null;
@@ -2897,7 +2910,7 @@ async function processMessage(workItem) {
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
           y: nodes[indexer].cap.y + 4
         });
-        childNode.ID = nodes[indexer].ID + (metadata.usercolor || "") + "." + (nodes[indexer].children.length + 1);
+        childNode.ID = nodes[indexer].ID + (metadata.usercolor || "") + "." + (childSearch(hnodes[indexer].children.length, metadata.usercolor) + 1);
         seenIDs.add(childNode.ID);
         childNode.usercolor = metadata.usercolor;
         childNode.content.message = audio;
