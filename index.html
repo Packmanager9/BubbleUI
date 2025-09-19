@@ -1862,6 +1862,9 @@ async function sendAudioElement(id, audioElement, colorin, xin = 320, yin = 320,
 let mouseOverPrinterObject = {};
 let globalAudioContext = null; // Reuse audio context
 
+
+
+
 async function visualizeAudioNode(audio) {
     if (!(audio instanceof HTMLAudioElement || audio instanceof Audio)) {
         throw new Error("Expected an Audio object");
@@ -1883,34 +1886,44 @@ async function visualizeAudioNode(audio) {
         await globalAudioContext.resume();
     }
 
-    const source = globalAudioContext.createMediaElementSource(audio);
+    // Load the audio file as a buffer instead of hijacking the audio element
+    let audioBuffer;
+    try {
+        const response = await fetch(audio.src);
+        const arrayBuffer = await response.arrayBuffer();
+        audioBuffer = await globalAudioContext.decodeAudioData(arrayBuffer);
+    } catch (error) {
+        console.error('Could not load audio for visualization:', error);
+        throw error;
+    }
+
+    // Create buffer source and analyser
+    const source = globalAudioContext.createBufferSource();
     const analyser = globalAudioContext.createAnalyser();
+    const gainNode = globalAudioContext.createGain();
+    
+    // Set up the buffer source
+    source.buffer = audioBuffer;
+    source.loop = false;
     
     // Better settings for visualization
-    analyser.fftSize = 256; // Smaller for better performance
+    analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.95;
     
+    // Set gain to 0 for silent processing
+    gainNode.gain.setValueAtTime(0, globalAudioContext.currentTime);
+    
+    // Connect: buffer source -> analyser -> gain(0) -> destination
     source.connect(analyser);
-    analyser.connect(globalAudioContext.destination);
+    analyser.connect(gainNode);
+    gainNode.connect(globalAudioContext.destination);
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
-    // Ensure audio is loaded and ready
-    if (audio.readyState < 2) {
-        await new Promise((resolve) => {
-            audio.addEventListener('canplay', resolve, { once: true });
-        });
-    }
-
-    // Start playing the audio
-    try {
-        await audio.play();
-    } catch (error) {
-        console.warn('Could not auto-play audio:', error);
-        // You might want to show a play button to the user here
-    }
-
+    // Start the buffer source
+    source.start(0);
+    
     let animationId;
     let startTime = Date.now();
 
@@ -1921,13 +1934,13 @@ async function visualizeAudioNode(audio) {
         // Use frequency data instead of time domain for more visible results
         analyser.getByteFrequencyData(dataArray);
 
-        // Partial clear with 25% opacity fade
+        // Partial clear with fade effect
         ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         // Calculate color based on elapsed time
-        const elapsedTime = (Date.now() - startTime); // milliseconds
-        const colorPhase = Math.min((elapsedTime) / (audio.duration * 1000), 1); // Clamp to 0-1
+        const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+        const colorPhase = Math.min(elapsedTime / audioBuffer.duration, 1); // Clamp to 0-1
         let strokeColor;
         
         if (colorPhase < 0.33) {
@@ -1973,6 +1986,11 @@ async function visualizeAudioNode(audio) {
         }
 
         ctx.stroke();
+
+        // Stop animation when audio buffer is done
+        if (elapsedTime >= audioBuffer.duration) {
+            cancelAnimationFrame(animationId);
+        }
     }
 
     draw();
@@ -1981,17 +1999,18 @@ async function visualizeAudioNode(audio) {
     mouseOverPrinterObject = { 
         context: ctx, 
         canvas,
-        audio,
+        audio, // Original audio element unchanged
         cleanup: () => {
             if (animationId) {
                 cancelAnimationFrame(animationId);
             }
-            audio.pause();
+            // Source will stop automatically when buffer ends
         }
     };
 
     return mouseOverPrinterObject;
 }
+
 
 // Example usage:
 // const audio = new Audio('your-audio-file.mp3');
