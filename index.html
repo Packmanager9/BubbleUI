@@ -19,6 +19,7 @@
 
     <script type="module">
 
+let globalAudioContext = null; // Reuse audio context
 let links = []
 let hoverTarget = null;
 let lock = 0
@@ -115,50 +116,13 @@ let rightClick = 0
 
 // --- Generate Tone notes as AudioBuffer ---
 
-let audioLock = 1 //turns off chimes
-async function makenoise(hexcode) {
-  // If locked, return empty buffer
-  if (audioLock === 1) {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return audioCtx.createBuffer(1, 1, audioCtx.sampleRate); // tiny empty buffer
-  }
+// Create global audio context once at the top level
+// const globalAudioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Strip '#' if present
-  hexcode = hexcode.replace(/^#/, '').toUpperCase();
+// Create a single empty buffer to reuse
+// let emptyBuffer = 
 
-  // Take first 6 chars from hexcode, repeat if shorter
-  const chars = Array.from({ length: 6 }, (_, i) => hexcode[i % hexcode.length]);
-
-  const toneAudioBuffer = await Tone.Offline((context) => {
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle" },
-      volume: -5
-    }).toDestination();
-
-    // First three notes: play normally on time
-    chars.slice(0, 3).forEach((ch, i) => {
-      const note = hexNotes[ch] || "C4";
-      synth.triggerAttackRelease(note, 0.1, i * 0.20);
-    });
-
-    // Last three notes: play simultaneously with first three but offset by 0.125s
-    chars.slice(3, 6).forEach((ch, i) => {
-      const note = hexNotes[ch] || "C4";
-      synth.triggerAttackRelease(note, 0.1, i * 0.20 + 0.1);
-    });
-
-  }, 4); // offline duration in seconds
-
-  const nativeBuffer = toneAudioBuffer.get ? toneAudioBuffer.get() : toneAudioBuffer._buffer;
-
-  // Optional: visualize
-  // visualizeAudioBuffer(nativeBuffer, canvas, 50, 50, 400, 100);
-
-  return nativeBuffer;
-}
-
-
-
+// let audioLock = 1 //turns off chimes
 function visualizeAudioBuffer(audioBuffer, canvas, x = 0, y = 0, width = canvas.width, height = canvas.height) {
     const ctx = canvas.getContext("2d");
     const rawData = audioBuffer.getChannelData(0); // Use first channel
@@ -1860,7 +1824,111 @@ async function sendAudioElement(id, audioElement, colorin, xin = 320, yin = 320,
 
 
 let mouseOverPrinterObject = {};
-let globalAudioContext = null; // Reuse audio context
+
+function initAudioContext() {
+  if (!globalAudioContext) {
+    try {
+      globalAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.warn("Failed to create AudioContext:", e);
+      globalAudioContext = null;
+    }
+  }
+  return globalAudioContext;
+}
+
+// Create a single empty buffer to reuse
+let emptyBuffer = null;
+
+function getEmptyBuffer() {
+  const ctx = initAudioContext();
+  if (!ctx) {
+    // Fallback: return a minimal mock buffer if AudioContext fails
+    return { duration: 0, sampleRate: 44100, numberOfChannels: 1, length: 1 };
+  }
+  
+  if (!emptyBuffer) {
+    try {
+      emptyBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    } catch (e) {
+      console.warn("Failed to create empty buffer:", e);
+      return { duration: 0, sampleRate: 44100, numberOfChannels: 1, length: 1 };
+    }
+  }
+  return emptyBuffer;
+}
+
+let audioLock = 1 //turns off chimes
+async function makenoise(hexcode) {
+  // If locked, return cached empty buffer immediately
+  if (audioLock === 1) {
+    return getEmptyBuffer();
+  }
+
+  // Strip '#' if present
+  hexcode = hexcode.replace(/^#/, '').toUpperCase();
+
+  // Take first 6 chars from hexcode, repeat if shorter
+  const chars = Array.from({ length: 6 }, (_, i) => hexcode[i % hexcode.length]);
+
+  const toneAudioBuffer = await Tone.Offline((context) => {
+    const synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      volume: -5
+    }).toDestination();
+
+    // First three notes: play normally on time
+    chars.slice(0, 3).forEach((ch, i) => {
+      const note = hexNotes[ch] || "C4";
+      synth.triggerAttackRelease(note, 0.1, i * 0.20);
+    });
+
+    // Last three notes: play simultaneously with first three but offset by 0.125s
+    chars.slice(3, 6).forEach((ch, i) => {
+      const note = hexNotes[ch] || "C4";
+      synth.triggerAttackRelease(note, 0.1, i * 0.20 + 0.1);
+    });
+
+  }, 4); // offline duration in seconds
+
+  const nativeBuffer = toneAudioBuffer.get ? toneAudioBuffer.get() : toneAudioBuffer._buffer;
+
+  // Optional: visualize
+  // visualizeAudioBuffer(nativeBuffer, canvas, 50, 50, 400, 100);
+
+  return nativeBuffer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2269,7 +2337,7 @@ async function main() {
   
   off_context.clearRect(0, 0, 1280, 1280)
   off_context.drawImage(canvas, offset.x, 0, 1280, 1280, 0, 0, 1280, 1280)
-  canvas_context.clearRect(-1000, -1000, canvas.width * 1, canvas.height * 1)
+  canvas_context.clearRect(-1, -1, canvas.width * 1.1, canvas.height * 1.1)
   
   timeon = 0
   if (timespeed <= 0) {
@@ -2288,7 +2356,7 @@ async function main() {
   }
 
   if (!(movedMouse == 1 || startmouse > 0)) {
-      canvas_context.clearRect(-1000, -1000, canvas.width * 100, canvas.height * 100)
+      canvas_context.clearRect(-1, -1, canvas.width * 1.1, canvas.height * 1.1)
       canvas_context.drawImage(offcanvas, 0, 0, 1280, 1280, 0, 0, 1280, 1280)
 
       let wet = 0
@@ -2339,7 +2407,7 @@ async function main() {
   } else if (movedMouse == 1 || startmouse > 0) {
       made--
       movedMouse = 0
-      canvas_context.clearRect(-1000, -1000, canvas.width * 100, canvas.height * 100)
+      canvas_context.clearRect(-1, -1, canvas.width * 1.1, canvas.height * 1.1)
       rect1.draw()
       
       if (fileon != false) {
@@ -2515,34 +2583,102 @@ const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true
 ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
 
 // instead of calling socketize(ws) directly, hook into the wrapper:
+
+
+
+
+// Message queue and processing system// Message queue and processing system
+let messageQueue = [];
+let processingMessages = false;
+const MAX_MESSAGES_PER_BATCH = 5;
+const PROCESSING_INTERVAL = 16; // ~60fps
+
+// Quick message handler - just queue the work
 window.onRobustMessage = async (event, rawSocket) => {
-  // ensure global dedupe set exists (do this once at top-level too)
-// seenIDs = seenIDs || new Set();
-
-rawSocket.binaryType = "arraybuffer";
-
-rawSocket.addEventListener("message", async (ev) => {
+  // Quick validation and queuing
   try {
-    const data = ev.data;
+    const workItem = { 
+      event, 
+      rawSocket, 
+      timestamp: Date.now(),
+      data: event.data 
+    };
+    messageQueue.push(workItem);
+    
+    // Start processing if not already running
+    if (!processingMessages) {
+      scheduleMessageProcessing();
+    }
+  } catch (e) {
+    console.error("Failed to queue message:", e);
+  }
+};
 
+function scheduleMessageProcessing() {
+  if (processingMessages) return;
+  
+  processingMessages = true;
+  requestIdleCallback(() => {
+    processMessageQueue();
+  }, { timeout: 50 }); // fallback timeout
+}
+
+async function processMessageQueue() {
+  let processed = 0;
+  const startTime = performance.now();
+  const maxProcessingTime = 8; // max 8ms per batch to avoid blocking
+  
+  try {
+    while (messageQueue.length > 0 && processed < MAX_MESSAGES_PER_BATCH) {
+      // Check if we're taking too long
+      if (performance.now() - startTime > maxProcessingTime) {
+        break;
+      }
+      
+      const workItem = messageQueue.shift();
+      await processMessage(workItem);
+      processed++;
+    }
+  } catch (e) {
+    console.error("Error processing message batch:", e);
+  }
+  
+  // Schedule next batch if more messages remain
+  if (messageQueue.length > 0) {
+    setTimeout(() => processMessageQueue(), PROCESSING_INTERVAL);
+  } else {
+    processingMessages = false;
+  }
+}
+
+// The actual message processing logic (moved from onRobustMessage)
+async function processMessage(workItem) {
+  const { event, rawSocket, data } = workItem;
+  
+  rawSocket.binaryType = "arraybuffer";
+  
+  try {
     // ---------- TEXT PACKETS ----------
     if (typeof data === "string") {
       let d;
-      try { d = JSON.parse(data); }
-      catch (err) { console.warn("received string but failed to parse JSON", err); return; }
+      try { 
+        d = JSON.parse(data); 
+      } catch (err) { 
+        console.warn("received string but failed to parse JSON", err); 
+        return; 
+      }
 
       // find parent node index (node that matches d.ID)
       let indexer = nodes.findIndex(n => n && n.ID == d.ID);
 
-      // if no parent node, bail early (your original behavior)
+      // if no parent node, bail early
       if (indexer === -1) return;
 
       // RESEND branch
       if (d.resend === 1) {
         if (seenIDs.has(d.ID)) return; // already handled
 
-        // If parent node missing, create root node (your original logic)
-        // (note: your original code re-searched nodes; we already have indexer)
+        // If parent node missing, create root node
         if (indexer === -1) {
           if (typeof d.ID === 'number') {
             const node = new Node(0, {
@@ -2552,7 +2688,7 @@ rawSocket.addEventListener("message", async (ev) => {
             });
             const high = new Rectangle(d.x, d.y - rect1.height, d.width, rect1.height, d.usercolor + '60');
             highs.push(high);
-            node.ID = d.ID;               // use d.ID (you previously used metadata.ID but here d is the parsed object)
+            node.ID = d.ID;
             node.width = d.width;
             seenIDs.add(node.ID);
             node.usercolor = d.usercolor;
@@ -2560,8 +2696,8 @@ rawSocket.addEventListener("message", async (ev) => {
             if (node.content.message) allaud.push(node.content.message);
             nodes.push(node);
             topnodes.push(node);
-            startmouse = 50
-overlap = 50;
+            startmouse = 50;
+            overlap = 50;
           }
           return;
         }
@@ -2572,7 +2708,6 @@ overlap = 50;
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
           y: nodes[indexer].cap.y + 4
         });
-        // keep ID scheme close to your original
         childNode.ID = (d.ID) + (d.usercolor || "") + "." + (nodes[indexer].children.length + 1);
         seenIDs.add(childNode.ID);
         childNode.usercolor = d.usercolor;
@@ -2580,14 +2715,12 @@ overlap = 50;
         childNode.messageType = "text";
         nodes[indexer].children.push(childNode);
         nodes.push(childNode);
-        startmouse = 50
-overlap = 50;
+        startmouse = 50;
+        overlap = 50;
 
       // NORMAL (non-resend) branch
       } else {
-
         if (seenIDs.has(d.ID)) return; // already handled
-        // Defensive: ensure indexer valid
         if (indexer === -1) return;
 
         const childNode = new Node(0, {
@@ -2602,15 +2735,36 @@ overlap = 50;
         childNode.messageType = "text";
         nodes[indexer].children.push(childNode);
         nodes.push(childNode);
-        startmouse = 50
-overlap = 50;
+        startmouse = 50;
+        overlap = 50;
       }
 
     // ---------- AUDIO PACKETS (ArrayBuffer) ----------
     } else if (data instanceof ArrayBuffer) {
+      // Validate ArrayBuffer has minimum required bytes
+      if (data.byteLength < 4) {
+        console.warn("ArrayBuffer too small for metadata length");
+        return;
+      }
+      
       const view = new DataView(data);
       const metadataLength = view.getUint32(0, true);
-      const metadataBytes = new Uint8Array(data, 4, metadataLength);
+      
+      // Validate metadata length is reasonable and within bounds
+      if (metadataLength < 0 || metadataLength > data.byteLength - 4) {
+        console.warn("Invalid metadata length:", metadataLength, "buffer size:", data.byteLength);
+        return;
+      }
+      
+      // Safe construction of metadata bytes
+      let metadataBytes;
+      try {
+        metadataBytes = new Uint8Array(data, 4, metadataLength);
+      } catch (e) {
+        console.warn("Failed to create metadata bytes:", e);
+        return;
+      }
+      
       let metadata;
       try {
         metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
@@ -2619,33 +2773,45 @@ overlap = 50;
         return;
       }
 
-      // safe slice for audio bytes
-      const audioBytes = data.slice(4 + metadataLength);
+      // safe slice for audio bytes - validate bounds first
+      const audioStartIndex = 4 + metadataLength;
+      if (audioStartIndex >= data.byteLength) {
+        console.warn("No audio data in packet");
+        return;
+      }
+      
+      const audioBytes = data.slice(audioStartIndex);
+      if (audioBytes.byteLength === 0) {
+        console.warn("Empty audio data");
+        return;
+      }
       const audioBlob = new Blob([audioBytes], { type: "audio/webm" });
       const url = URL.createObjectURL(audioBlob);
       const audio = new Audio();
       audio.src = url;
 
-      audio.addEventListener("error", (e) => {
-        console.error("Audio loading error:", e);
-        URL.revokeObjectURL(url);
-      });
-      audio.addEventListener("loadeddata", () => {
-        // optional debug
-        // console.log("Audio loaded and ready");
+      // Use promise-based loading to avoid blocking
+      await new Promise((resolve) => {
+        audio.addEventListener("error", (e) => {
+          console.error("Audio loading error:", e);
+          URL.revokeObjectURL(url);
+          resolve();
+        });
+        audio.addEventListener("loadeddata", () => {
+          resolve();
+        });
+        // Fallback timeout
+        setTimeout(resolve, 1000);
       });
 
       // RESEND branch
       if (metadata.resend === 1) {
         if (seenIDs.has(metadata.ID)) return; // skip if already seen
 
-        // If you use trimVersion to map metadata.ID to a parent ID, keep that
         const numbeee = typeof trimVersion === 'function' ? trimVersion(metadata.ID) : metadata.ID;
 
-        // find indexer via trimmed version or exact ID
         let indexer = nodes.findIndex(n => n && (n.ID == numbeee || n.ID == metadata.ID));
         if (indexer === -1) {
-          // create a root node if trimmed ID is a number (your original behavior)
           if (typeof numbeee === 'number') {
             const node = new Node(0, {
               message: {},
@@ -2662,13 +2828,12 @@ overlap = 50;
             allaud.push(node.content.message);
             topnodes.push(node);
             nodes.push(node);
-            startmouse = 50
-overlap = 50;
+            startmouse = 50;
+            overlap = 50;
           }
           return;
         }
 
-        // attach as child under existing parent
         const childNode = new Node(0, {
           message: {},
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
@@ -2681,18 +2846,15 @@ overlap = 50;
         allaud.push(childNode.content.message);
         nodes[indexer].children.push(childNode);
         nodes.push(childNode);
-        startmouse = 50
-overlap = 50;
+        startmouse = 50;
+        overlap = 50;
 
       // NORMAL audio branch
       } else {
-        if (seenIDs.has(metadata.ID)) return; // skip if already seen
-        // find parent indexer
+        if (seenIDs.has(metadata.ID)) return;
         let indexer = nodes.findIndex(n => n && n.ID == metadata.ID);
-        if (indexer === -1) {
-          // if no parent, can't attach — bail
-          return;
-        }
+        if (indexer === -1) return;
+        
         const childNode = new Node(0, {
           message: {},
           x: nodes[indexer].cap.x + (Math.random() - 0.5),
@@ -2705,35 +2867,37 @@ overlap = 50;
         allaud.push(childNode.content.message);
         nodes[indexer].children.push(childNode);
         nodes.push(childNode);
-        startmouse = 50
-overlap = 50;
+        startmouse = 50;
+        overlap = 50;
       }
     }
   } catch (e) {
-    console.error("Failed to handle message:", e);
+    console.error("Failed to process message:", e);
   }
 
-  // trim seenIDs if it gets too large (evict oldest entries)
+  // Trim seenIDs if it gets too large (moved to separate function)
+  trimSeenIds();
+}
+
+function trimSeenIds() {
   try {
     const MAX_SEEN = 50000;
     if (seenIDs.size > MAX_SEEN) {
       const toEvict = 10000;
       const arr = Array.from(seenIDs);
-      for (let i = 0; i < toEvict && arr[i]; i++) seenIDs.delete(arr[i]);
+      for (let i = 0; i < toEvict && arr[i]; i++) {
+        seenIDs.delete(arr[i]);
+      }
     }
   } catch (e) {
-    // don't allow trimming issues to break processing
     console.warn("seenIDs trim error", e);
   }
-});
+}
 
 
 
 
 
-
-
-};
 
 // optional: when underlying raw socket opens, attach things that depended on ws.open
 window.onRobustOpen = (rawSocket) => {
