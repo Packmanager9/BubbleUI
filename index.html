@@ -2299,7 +2299,7 @@ async function main() {
 
     }
     stopper++
-        if(stopper > (Math.ceil(Math.sqrt(nodes.length)))*timestep*10){
+        if(stopper > (Math.ceil(Math.abs(nodes.length)))*timestep*10){
             stopper =0
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
