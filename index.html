@@ -2269,28 +2269,28 @@ hoverTarget = nodes[0]
 
 async function main() {
   hovercheck--
-  if(hovercheck <= 0){
-    hovercheck = 30
-    let l = new LineOP(TIP_engine, TIP_engine);
-    let min = 99999999;
-    let index = -1;
+//   if(hovercheck <= 0){
+//     hovercheck = 30
+//     let l = new LineOP(TIP_engine, TIP_engine);
+//     let min = 99999999;
+//     let index = -1;
     
-    for (let t = 0; t < nodes.length; t++) {
-        l.target = nodes[t].cap;
-        let h = l.hypotenuse();
-        if (h <= min && h <= nodes[t].offset.radius) {
-            index = t;
-            min = h;
-        }
-    }
+//     for (let t = 0; t < nodes.length; t++) {
+//         l.target = nodes[t].cap;
+//         let h = l.hypotenuse();
+//         if (h <= min && h <= nodes[t].offset.radius) {
+//             index = t;
+//             min = h;
+//         }
+//     }
 
-    // Only update hoverTarget if we found a valid node, otherwise keep current or set to null
-    if (index > -1) {
-        hoverTarget = nodes[index];
-    } else {
-        hoverTarget = null; // Clear hover target when no node is in range
-    }
-  }
+//     // Only update hoverTarget if we found a valid node, otherwise keep current or set to null
+//     if (index > -1) {
+//         hoverTarget = nodes[index];
+//     } else {
+//         hoverTarget = null; // Clear hover target when no node is in range
+//     }
+//   }
 
   startmouse--
   if(keysPressed['c']){
