@@ -2268,9 +2268,9 @@ let hovercheck = 1
 hoverTarget = nodes[0]
 
 
-let timestep = 40
+let timestep = 100
 let stopper = 0
-let timeip = 24
+let timeip = 60
 
 function childSearch(children, color){
 
@@ -2299,7 +2299,7 @@ async function main() {
 
     }
     stopper++
-        if(stopper > (Math.ceil(Math.sqrt(nodes.length)))*timestep*3){
+        if(stopper > (Math.ceil(Math.sqrt(nodes.length)))*timestep*10){
             stopper =0
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
