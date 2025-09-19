@@ -2297,7 +2297,7 @@ async function main() {
         }
         robust.send(JSON.stringify({resendList:1,please:lister}))
         stopper++
-        if(stopper > 20){
+        if(stopper > Math.ceil(Math.sqrt(nodes.length))){
             stopper =0
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
