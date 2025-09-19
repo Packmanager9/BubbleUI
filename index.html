@@ -2298,43 +2298,43 @@ async function main() {
         }
       }
 
-      // Only draw hover effect if we have a valid hoverTarget and not adding
-      if(wet == 0 && hoverTarget !== null && hoverTarget !== undefined){
-        if(hoverTarget.malice != 1){
-          hoverTarget.malice = 1
-          visualizeAudioNode(hoverTarget.content.message)
-        }
+      // // Only draw hover effect if we have a valid hoverTarget and not adding
+      // if(wet == 0 && hoverTarget !== null && hoverTarget !== undefined){
+      //   if(hoverTarget.malice != 1){
+      //     hoverTarget.malice = 1
+      //     visualizeAudioNode(hoverTarget.content.message)
+      //   }
         
         
-        // Calculate the actual drawing position with offset
-        let drawX = hoverTarget.body.x + hoverTarget.offset.x;
-        let drawY = hoverTarget.body.y + hoverTarget.offset.y;
+      //   // Calculate the actual drawing position with offset
+      //   let drawX = hoverTarget.body.x + hoverTarget.offset.x;
+      //   let drawY = hoverTarget.body.y + hoverTarget.offset.y;
         
-        // Scale by radius - diameter becomes height, width scales proportionally
-        let diameter = hoverTarget.offset.radius * 2;
-        let scaleFactor = diameter / mouseOverPrinterObject.canvas.height;
-        let scaledWidth = mouseOverPrinterObject.canvas.width * scaleFactor;
-        let scaledHeight = diameter;
+      //   // Scale by radius - diameter becomes height, width scales proportionally
+      //   let diameter = hoverTarget.offset.radius * 2;
+      //   let scaleFactor = diameter / mouseOverPrinterObject.canvas.height;
+      //   let scaledWidth = mouseOverPrinterObject.canvas.width * scaleFactor;
+      //   let scaledHeight = diameter;
         
-        // Draw top half (normal)
-        canvas_context.drawImage(
-            mouseOverPrinterObject.canvas, 
-            0, 0, mouseOverPrinterObject.canvas.width, mouseOverPrinterObject.canvas.height, 
-            drawX, drawY - (scaledHeight/2), 
-            scaledWidth, scaledHeight/2
-        );
+      //   // Draw top half (normal)
+      //   canvas_context.drawImage(
+      //       mouseOverPrinterObject.canvas, 
+      //       0, 0, mouseOverPrinterObject.canvas.width, mouseOverPrinterObject.canvas.height, 
+      //       drawX, drawY - (scaledHeight/2), 
+      //       scaledWidth, scaledHeight/2
+      //   );
 
-        // Draw bottom half (flipped upside down)
-        canvas_context.save();
-        canvas_context.scale(1, -1);
-        canvas_context.drawImage(
-            mouseOverPrinterObject.canvas, 
-            0, 0, mouseOverPrinterObject.canvas.width, mouseOverPrinterObject.canvas.height, 
-            drawX, -(drawY + (scaledHeight/2)), 
-            scaledWidth, scaledHeight/2
-        );
-        canvas_context.restore();
-      }
+      //   // Draw bottom half (flipped upside down)
+      //   canvas_context.save();
+      //   canvas_context.scale(1, -1);
+      //   canvas_context.drawImage(
+      //       mouseOverPrinterObject.canvas, 
+      //       0, 0, mouseOverPrinterObject.canvas.width, mouseOverPrinterObject.canvas.height, 
+      //       drawX, -(drawY + (scaledHeight/2)), 
+      //       scaledWidth, scaledHeight/2
+      //   );
+      //   canvas_context.restore();
+      // }
       
   } else if (movedMouse == 1 || startmouse > 0) {
       made--
