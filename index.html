@@ -2367,10 +2367,10 @@ async function main() {
       funyk()
   }
 
-  if (timerz % 20 == 0) {
-      if (nodes[Math.floor(timerz / 20) % (nodes.length)].ID != 0) {
-        if(nodes[Math.floor(timerz / 20) % (nodes.length)].sending != 0){
-            sendAudioElement(nodes[Math.floor(timerz / 20) % (nodes.length)].ID, nodes[Math.floor(timerz / 20) % (nodes.length)].content.message, nodes[Math.floor(timerz / 20) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 20) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 20) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 20) % (nodes.length)].width)
+  if (timerz % 40 == 0) {
+      if (nodes[Math.floor(timerz / 40) % (nodes.length)].ID != 0) {
+        if(nodes[Math.floor(timerz / 40) % (nodes.length)].sending != 0){
+            sendAudioElement(nodes[Math.floor(timerz / 40) % (nodes.length)].ID, nodes[Math.floor(timerz / 40) % (nodes.length)].content.message, nodes[Math.floor(timerz / 40) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 40) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 40) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 40) % (nodes.length)].width)
         }
       }
   }
