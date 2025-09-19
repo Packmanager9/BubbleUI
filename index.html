@@ -2296,15 +2296,15 @@ async function main() {
             lister.push(nodes[t].ID)
         }
         robust.send(JSON.stringify({resendList:1,please:lister}))
-        stopper++
-        if(stopper > Math.ceil(Math.sqrt(nodes.length))){
+
+    }
+    stopper++
+        if(stopper > (Math.ceil(Math.sqrt(nodes.length)))*timestep*3){
             stopper =0
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
             }
         }
-    }
-
 
   hovercheck--
 //   if(hovercheck <= 0){
