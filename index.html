@@ -1164,6 +1164,7 @@ let worldcolor = 'olive'
 let nodeid = 0
 class Node {
     constructor(type, content) {
+        this.sending = 1
         this.heading = 0
         this.width = -1
         this.linker = new LineOP(new Point(0,0),new Point(0,0))
@@ -1555,7 +1556,7 @@ for (let t = 0; t < links[u].secret.children.length; t++) {
             // }
             // }
             
-            drawNodeL(node.children[t])
+            // drawNodeL(node.children[t])
         }
 }
 
@@ -1778,7 +1779,7 @@ async function sendAudioElement(id, audioElement, colorin, xin = 320, yin = 320,
         const audioBuffer = await audioBlob.arrayBuffer();
 
         // Encode metadata
-        console.log(id)
+        console.log(id) 
         const metadata = JSON.stringify({ type: "audio", ID: id, usercolor: colorin + (width > -1 ? '' : ''), resend: 1, x: xin, y: yin, width: width });
         const encoder = new TextEncoder();
         const metadataBytes = encoder.encode(metadata);
@@ -2267,7 +2268,31 @@ let hovercheck = 1
 hoverTarget = nodes[0]
 
 
+let timestep = 100
+let stopper = 0
+let timeip = 60
+
 async function main() {
+
+
+    timeip++
+    if(timeip > timestep){
+        let lister = []
+        timeip = 0
+        for(let t = 0;t<nodes.length;t++){
+            lister.push(nodes[t].ID)
+        }
+        ws.send(JSON.stringify({resendList:1,please:lister}))
+        stopper++
+        if(stopper > 10){
+            stopper =0
+            for(let k = 0;k<nodes.length;k++){
+                nodes[k].sending  = 1
+            }
+        }
+    }
+
+
   hovercheck--
 //   if(hovercheck <= 0){
 //     hovercheck = 30
@@ -2331,7 +2356,9 @@ async function main() {
 
   if (timerz % 233 == 0) {
       if (nodes[Math.floor(timerz / 233) % (nodes.length)].ID != 0) {
-          sendAudioElement(nodes[Math.floor(timerz / 233) % (nodes.length)].ID, nodes[Math.floor(timerz / 233) % (nodes.length)].content.message, nodes[Math.floor(timerz / 233) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 233) % (nodes.length)].width)
+        if(nodes[Math.floor(timerz / 233) % (nodes.length)].sending != 0){
+            sendAudioElement(nodes[Math.floor(timerz / 233) % (nodes.length)].ID, nodes[Math.floor(timerz / 233) % (nodes.length)].content.message, nodes[Math.floor(timerz / 233) % (nodes.length)].usercolor, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.x, nodes[Math.floor(timerz / 233) % (nodes.length)].cap.y, nodes[Math.floor(timerz / 233) % (nodes.length)].width)
+        }
       }
   }
   
@@ -2675,7 +2702,17 @@ async function processMessage(workItem) {
       if (indexer === -1) return;
 
       // RESEND branch
-      if (d.resend === 1) {
+
+      if(d.resendList == 1){
+        for(let t = 0;t<d.please.length;t++){
+            for(let k = 0;k<nodes.length;k++){
+                if(d.please[t] == nodes[k].ID){
+                    nodes[k].sending  = 0
+                }
+            }
+        }
+
+      }else  if (d.resend === 1) {
         if (seenIDs.has(d.ID)) return; // already handled
 
         // If parent node missing, create root node
