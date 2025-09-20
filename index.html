@@ -3294,12 +3294,19 @@ ensureAudioContext();
 
 
 function enableMic() {
-  globalMicStream?.getAudioTracks().forEach(t => (t.enabled = true));
+  globalMicStream?.getAudioTracks().forEach(t => (
+  t.enabled = true,
+  t.muted = false
+  ));
   console.log("🎙️ Mic enabled");
 }
 
 function disableMic() {
-  globalMicStream?.getAudioTracks().forEach(t => (t.enabled = false));
+  globalMicStream?.getAudioTracks().forEach(t => (
+    t.enabled = false,
+    t.muted = true
+
+  ));
   console.log("🤫 Mic disabled");
 }
 
