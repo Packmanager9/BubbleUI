@@ -1229,10 +1229,16 @@ async function mainSetup() {
 function setupSignaling(pc, ws) {
   async function sendOffer(force = false) {
     // Polite peers normally don’t initiate unless negotiationneeded or forced
-    if (isPolite && !force) {
-      console.log("Polite peer deferring offer (waiting for remote)");
-      return;
+    if (isPolite) {
+  console.log("Polite peer - waiting for remote offer");
+  setTimeout(() => {
+    if (pc && pc.signalingState === "stable" && !pc.remoteDescription) {
+      console.warn("⚠️ Timed out waiting for offer — forcing negotiation");
+      signaling.sendOffer(true); // force
     }
+  }, 3000);
+}
+
 
     try {
       makingOffer = true;
