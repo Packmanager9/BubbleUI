@@ -1067,7 +1067,7 @@ class Circle {
         this.strokeColor = strokeColor
         this.dragged = -1
     }
-    draw() {
+    draw(incoll = 1) {
         if (this.dragged == 1) {
             // console.log(2)
             this.x = TIP_engine.x
@@ -1083,7 +1083,12 @@ class Circle {
             }
         }
         canvas_context.lineWidth = 2
-        canvas_context.strokeStyle = "#888888"
+        if(incoll == 1){
+          canvas_context.strokeStyle = 'white'
+        }else{
+
+          canvas_context.strokeStyle = 'black'
+        }
         canvas_context.beginPath();
         if (this.radius > 0) {
             canvas_context.arc(this.x, this.y, this.radius, 0, (Math.PI * 2), true)
@@ -1644,11 +1649,23 @@ sendAudioObject(holdTarget.ID, { audioBlob: mergedBlob });
                         holdTarget.content.message.pause();
                         holdTarget.content.message.currentTime = 0;
                         pausedex = -1;
+                        if(keysPressed['c']){
+                          holdTarget.collapsed *= -1
+                          childrenhide(holdTarget)
+                          // console.log(holdTarget)
+                        }
                     } else {
                         // Play this node
+                        if(keysPressed['c']){
+                          holdTarget.collapsed *= -1
+                          childrenhide(holdTarget)
+                          // console.log(holdTarget)
+                        }else{
+
                         holdTarget.content.message.volume = 1;
                         holdTarget.content.message.play();
                         holdTarget.touched = 1;
+                        }
                     }
 
                     pausedex = index;
@@ -1792,6 +1809,7 @@ let worldcolor = 'olive'
 let nodeid = 0
 class Node {
     constructor(type, content) {
+      this.collapsed = -1
         this.sending = 1
         this.heading = 0
         this.width = -1
@@ -2050,7 +2068,9 @@ class Node {
 
             this.offset.radius /= 15
         }
+//something like this
 
+        // this.offset.x+= this.children.length
     }
 }
 
@@ -2062,9 +2082,16 @@ function childrenset(node) {
         childrenset(node.children[t])
     }
 }
+function childrenhide(node) {
+    for (let t = 0; t < node.children.length; t++) {
+        // console.log('s')
+        node.children[t].collapsed = node.collapsed
+        childrenhide(node.children[t])
+    }
+}
 let circle = new Circle(0, 0, 1, worldcolor)
 
-function drawNode(node) {
+function drawNode(node) { 
     // node.body.x -= .1
     if (node.type == 0) { //audio react
         circle.x = node.body.x + node.offset.x
@@ -2080,7 +2107,7 @@ function drawNode(node) {
         } else {
             circle.color = node.usercolor + (node.touched == 0 ? '' : 'a0')
         }
-        circle.draw()
+        circle.draw(node.collapsed)
         // }
 
         if (keysPressed['f']) {
@@ -2090,10 +2117,65 @@ function drawNode(node) {
         node.cap = {}
         node.cap.x = circle.x
         node.cap.y = circle.y
+        let str = Math.round(node.content.message.duration*1000)
+        canvas_context.strokeStyle ="black"
+        canvas_context.fillStyle ="white"
+        canvas_context.font = `${Math.round(node.offset.radius/1.8)}px arial`
+        canvas_context.strokeText(str, circle.x-(node.offset.radius/1.8), circle.y+(node.offset.radius/10))
+        canvas_context.fillText(str, circle.x-(node.offset.radius/1.8), circle.y+(node.offset.radius/10))
+
         for (let t = 0; t < node.children.length; t++) {
             node.children[t].layer = node.layer + 1
             node.children[t].parent = node
+     
+            if(node.collapsed == -1){
             drawNode(node.children[t])
+            }else{
+              drawNodelight(node.children[t])
+            }
+            // let link = new LineOP(node.cap, node.children[t].cap, "blue", 2)
+            // link.draw()
+        }
+    } else {
+
+    }
+}
+
+function drawNodelight(node) { 
+    // node.body.x -= .1
+    if (node.type == 0) { //audio react
+        circle.x = node.body.x + node.offset.x
+        circle.y = node.body.y + node.offset.y
+        circle.radius = node.offset.radius
+        circle.color = node.offset.colorball
+        // if(keysPressed['g']){
+
+        if (node == addingOn) {
+            circle.color = '#ffffff'
+        } else if (node == dragTarget) {
+            circle.color = '#444944'
+        } else {
+            circle.color = node.usercolor + (node.touched == 0 ? '' : 'a0')
+        }
+        // circle.draw()
+        // }
+
+        if (keysPressed['f']) {
+            let r = new Circle(circle.x + 50, circle.y + 50, circle.radius, node.latentColor)
+            r.draw()
+        }
+        node.cap = {}
+        node.cap.x = circle.x
+        node.cap.y = circle.y
+        let str = node.content.message
+        for (let t = 0; t < node.children.length; t++) {
+            node.children[t].layer = node.layer + 1
+            node.children[t].parent = node
+            if(node.collapsed == -1){
+            drawNode(node.children[t])
+            }else{
+              drawNodelight(node.children[t])
+            }
             // let link = new LineOP(node.cap, node.children[t].cap, "blue", 2)
             // link.draw()
         }
@@ -2111,11 +2193,13 @@ function drawNodeD(node) {
                 "white", 
                 node.offset.radius / 4
             )
-            link.draw()
-            links.push(link)
             node.children[t].linker = link
             link.secret = node
-            drawNodeD(node.children[t])
+            if(node.collapsed == -1){
+              link.draw()
+            links.push(link)
+              drawNodeD(node.children[t])
+            }
         }
 
     }
@@ -3339,6 +3423,7 @@ window.addEventListener("keyup", e => {
 async function main() {
 
 
+  console.log(nodes)
     timeip++
     if(timeip > timestep){
         let lister = []
@@ -3383,7 +3468,7 @@ async function main() {
 //   }
 
   startmouse--
-  if(keysPressed['c']){
+  if(keysPressed['v']){
     coloron = getRandomColor()
   }
   if(lock ==1){
@@ -3509,6 +3594,18 @@ async function main() {
       for (let t = 0; t < highs.length; t++) {
           highs[t].draw()
       }
+      for (let t = 0; t < nodes.length; t++) {
+        for(let k = 0;k<nodes[t].children.length;k++){
+
+          if(nodes[t].children[k].collapsed == -1){
+             let n =  nodes[t].collapsed = -1
+             while(n.parent){
+              n.collapsed = -1
+             }
+            }
+        }
+          }
+
 
       for (let t = 0; t < topnodes.length; t++) {
           drawNodeD(topnodes[t])
