@@ -25,41 +25,41 @@
 <script>
     // Global debug functions - accessible from console
     window.debugWebRTCConnections = function() {
-      console.log("=== WebRTC Debug ===");
-      console.log("PC exists:", !!pc);
-      console.log("Connection state:", pc?.connectionState);
-      console.log("ICE state:", pc?.iceConnectionState);
-      console.log("Signaling state:", pc?.signalingState);
-      console.log("Is polite:", isPolite);
-      console.log("Making offer:", makingOffer);
-      console.log("Ignore offer:", ignoreOffer);
-      console.log("WebRTC initialized:", webrtcInitialized);
-      console.log("Local senders:", pc?.getSenders()?.length || 0);
-      console.log("Remote receivers:", pc?.getReceivers()?.length || 0);
+      // console.log("=== WebRTC Debug ===");
+      // console.log("PC exists:", !!pc);
+      // console.log("Connection state:", pc?.connectionState);
+      // console.log("ICE state:", pc?.iceConnectionState);
+      // console.log("Signaling state:", pc?.signalingState);
+      // console.log("Is polite:", isPolite);
+      // console.log("Making offer:", makingOffer);
+      // console.log("Ignore offer:", ignoreOffer);
+      // console.log("WebRTC initialized:", webrtcInitialized);
+      // console.log("Local senders:", pc?.getSenders()?.length || 0);
+      // console.log("Remote receivers:", pc?.getReceivers()?.length || 0);
       
       // Check local audio tracks
-      console.log("--- LOCAL TRACKS ---");
+      // console.log("--- LOCAL TRACKS ---");
       pc?.getSenders()?.forEach((sender, i) => {
         if (sender.track && sender.track.kind === 'audio') {
-          console.log(`Local audio ${i}:`, {
-            enabled: sender.track.enabled,
-            muted: sender.track.muted,
-            readyState: sender.track.readyState,
-            id: sender.track.id
-          });
+          // console.log(`Local audio ${i}:`, {
+          //   enabled: sender.track.enabled,
+          //   muted: sender.track.muted,
+          //   readyState: sender.track.readyState,
+          //   id: sender.track.id
+          // });
         }
       });
       
       // Check remote audio tracks
-      console.log("--- REMOTE TRACKS ---");
+      // console.log("--- REMOTE TRACKS ---");
       pc?.getReceivers()?.forEach((receiver, i) => {
         if (receiver.track && receiver.track.kind === 'audio') {
-          console.log(`Remote audio ${i}:`, {
-            enabled: receiver.track.enabled,
-            muted: false, //receiver.track.muted,
-            readyState: receiver.track.readyState,
-            id: receiver.track.id
-          });
+          // console.log(`Remote audio ${i}:`, {
+          //   enabled: receiver.track.enabled,
+          //   muted: false, //receiver.track.muted,
+          //   readyState: receiver.track.readyState,
+          //   id: receiver.track.id
+          // });
         }
       });
       
@@ -68,13 +68,13 @@
       console.log("--- AUDIO ELEMENTS ---");
       console.log("Audio elements on page:", audioElements.length);
       audioElements.forEach((audio, i) => {
-        console.log(`Audio element ${i}:`, {
-          src: audio.src,
-          muted: audio.muted,
-          volume: audio.volume,
-          paused: audio.paused,
-          autoplay: audio.autoplay
-        });
+        // console.log(`Audio element ${i}:`, {
+        //   src: audio.src,
+        //   muted: audio.muted,
+        //   volume: audio.volume,
+        //   paused: audio.paused,
+        //   autoplay: audio.autoplay
+        // });
       });
     };
     
@@ -83,48 +83,48 @@
       if (signaling && signaling.sendOffer) {
         signaling.sendOffer();
       } else {
-        console.log("No signaling object available");
+        // console.log("No signaling object available");
       }
     };
     
     window.togglePoliteness = function() {
       isPolite = !isPolite;
-      console.log("Toggled politeness, now:", isPolite ? "polite" : "impolite");
+      // console.log("Toggled politeness, now:", isPolite ? "polite" : "impolite");
     };
     
     window.checkAudioContext = function() {
-      console.log("=== AUDIO CONTEXT DEBUG ===");
-      console.log("Global audio context exists:", !!globalAudioContext);
-      console.log("Audio context state:", globalAudioContext?.state);
-      console.log("Audio context ready:", audioContextReady);
-      console.log("Sample rate:", globalAudioContext?.sampleRate);
+      // console.log("=== AUDIO CONTEXT DEBUG ===");
+      // console.log("Global audio context exists:", !!globalAudioContext);
+      // console.log("Audio context state:", globalAudioContext?.state);
+      // console.log("Audio context ready:", audioContextReady);
+      // console.log("Sample rate:", globalAudioContext?.sampleRate);
     };
     
     window.testMicAccess = function() {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
-          console.log("Microphone test successful");
-          console.log("Tracks:", stream.getTracks().map(t => ({
-            kind: t.kind,
-            enabled: t.enabled,
-            muted: t.muted,
-            readyState: t.readyState
-          })));
+          // console.log("Microphone test successful");
+          // console.log("Tracks:", stream.getTracks().map(t => ({
+          //   kind: t.kind,
+          //   enabled: t.enabled,
+          //   muted: t.muted,
+          //   readyState: t.readyState
+          // })));
           stream.getTracks().forEach(track => track.stop());
         })
         .catch(err => {
-          console.error("Microphone test failed:", err);
+          // console.error("Microphone test failed:", err);
         });
     };
     
     // Auto-run basic debug on page load
     setTimeout(() => {
-      console.log("WebRTC Debug functions loaded. Available commands:");
-      console.log("- debugWebRTCConnections()");
-      console.log("- forceOffer()"); 
-      console.log("- togglePoliteness()");
-      console.log("- checkAudioContext()");
-      console.log("- testMicAccess()");
+      // console.log("WebRTC Debug functions loaded. Available commands:");
+      // console.log("- debugWebRTCConnections()");
+      // console.log("- forceOffer()"); 
+      // console.log("- togglePoliteness()");
+      // console.log("- checkAudioContext()");
+      // console.log("- testMicAccess()");
     }, 2000);
     </script>
 <!-- Add this script tag in your <head> section, before your main script -->
@@ -140,10 +140,10 @@
             return; // stop here, page will reload on HTTPS
         }
 
-        console.log("Requesting microphone access...");
+        // console.log("Requesting microphone access...");
         globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-        console.log("Microphone access granted");
+        // console.log("Microphone access granted");
         
         // Optional: Show visual indicator that mic is ready
         document.body.style.border = "2px solid green";
@@ -1053,6 +1053,9 @@ class Rectangle {
         return false
     }
 }
+
+
+let rect1 = new Rectangle(0, 90, 1280, 100, "green")
 class Circle {
     constructor(x, y, radius, color, xmom = 0, ymom = 0, friction = 1, reflect = 0, strokeWidth = 0, strokeColor = "transparent") {
         this.x = x
@@ -1247,7 +1250,7 @@ function setupSignaling(pc, ws) {
 
     try {
       makingOffer = true;
-      console.log("Creating offer...");
+      // console.log("Creating offer...");
 
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
@@ -1256,18 +1259,18 @@ function setupSignaling(pc, ws) {
 
       // ✅ Perfect negotiation glare check
       if (pc.signalingState !== "stable") {
-        console.warn("⚠️ Signaling state not stable, rolling back instead of sending offer");
+        // console.warn("⚠️ Signaling state not stable, rolling back instead of sending offer");
         await pc.setLocalDescription({ type: "rollback" });
         return;
       }
 
-      console.log("Offer SDP:", offer.sdp);
+      // console.log("Offer SDP:", offer.sdp);
       const audioCodecs = offer.sdp.match(/a=rtpmap:\d+ (\w+\/\d+)/g);
-      console.log("Available audio codecs:", audioCodecs);
+      // console.log("Available audio codecs:", audioCodecs);
 
       await pc.setLocalDescription(offer);
       ws.send(JSON.stringify({ offer }));
-      console.log("Offer sent successfully");
+      // console.log("Offer sent successfully");
     } catch (error) {
       console.error("Failed to send offer:", error);
     } finally {
@@ -1280,13 +1283,13 @@ function setupSignaling(pc, ws) {
       await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer));
       const answer = await pc.createAnswer();
 
-      console.log("Answer SDP:", answer.sdp);
+      // console.log("Answer SDP:", answer.sdp);
 
       await pc.setLocalDescription(answer);
       ws.send(JSON.stringify({ answer }));
-      console.log("Answer sent successfully");
+      // console.log("Answer sent successfully");
     } catch (error) {
-      console.error("Failed to send answer:", error);
+      // console.error("Failed to send answer:", error);
     }
   }
 
@@ -1485,15 +1488,15 @@ setInterval(mainLoop, 15);
         rightClick = 0
 
         room.check(TIP_engine);
-        if (rect1.isPointInside(TIP_engine)) {
+        // if (rect1.isPointInside(TIP_engine)) {
 
-            if (fileon == false) {
-                uploaded = 1
-            } else {
+        //     if (fileon == false) {
+        //         uploaded = 1
+        //     } else {
 
-                st1 = TIP_engine.x
-            }
-        }
+        //         st1 = TIP_engine.x
+        //     }
+        // }
         let l = new LineOP(TIP_engine, TIP_engine);
         let min = 99999999;
         let index = -1;
@@ -2210,20 +2213,26 @@ function setupConnectionRecovery() {
     if (!pc) return;
     
     pc.onconnectionstatechange = async () => {
-        console.log("WebRTC connection state:", pc.connectionState);
-        
-        switch (pc.connectionState) {
-            case 'failed':
-            case 'disconnected':
-                console.log("Connection failed/disconnected, attempting recovery...");
-                await handleConnectionFailure();
-                break;
-            case 'connected':
-                console.log("WebRTC connection established!");
-                break;
-        }
-    };
-
+    console.log("WebRTC connection state:", pc.connectionState);
+    
+    switch (pc.connectionState) {
+        case 'failed':
+        case 'disconnected':
+            console.log("Connection failed/disconnected, attempting recovery...");
+            await handleConnectionFailure();
+            break;
+        case 'connected':
+            console.log("WebRTC connection established!");
+            
+            // Auto-start timeline when connected
+            setTimeout(() => {
+                if (globalAudioContext && !audioTimeline) {
+                    initializeAudioTimeline();
+                }
+            }, 1000);
+            break;
+    }
+};
     pc.oniceconnectionstatechange = async () => {
         console.log("ICE connection state:", pc.iceConnectionState);
         
@@ -2539,9 +2548,234 @@ class RoomShape {
 }
 
 
+// Optimized Audio Timeline with performance improvements
+class AudioTimeline {
+    constructor() { 
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 1280;
+        this.canvas.height = 100; // Match rect1 height
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.top = '90px'; // Match rect1 y
+        this.canvas.style.left = '0';
+        this.canvas.style.zIndex = '10';
+        this.canvas.style.pointerEvents = 'none';
+        this.ctx = this.canvas.getContext('2d');
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+         
+        // Offscreen canvases for persistent waveforms
+        this.offscreenCanvases = [];
+        this.analysers = [];
+        this.dataArrays = [];
+        this.sources = [];
+        this.streams = [];
+        
+        this.bufferLength = 1024; // For time domain data
+        this.duration = 180; // 3 minutes in seconds
+        this.pixelsPerSecond = 10; // Reduced to 10 pixels/second for slower scroll
+        this.offscreenWidth = this.duration * this.pixelsPerSecond; // 180 * 10 = 1800 pixels
+        this.timeOffset = 0; // Tracks current time position
+        this.lastFrameTime = performance.now();
+        this.sliceWidth = 1; // 1 pixel per frame at ~60fps (adjusted in rendering)
+        
+        this.animationFrameId = null;
+        this.isRendering = false;
+
+        if (this.audioContext.state === 'suspended') {
+            const resume = () => this.audioContext.resume().then(() => console.log("Timeline AudioContext resumed"));
+            ["click", "keydown", "touchstart", "pointerdown"].forEach(evt => {
+                document.addEventListener(evt, resume, { once: true });
+            });
+        }
+    }
+
+    addStream(stream, label = 'Unknown') {
+        if (this.streams.some(s => s === stream)) return; // Avoid duplicates
+        
+        const analyser = this.audioContext.createAnalyser();
+        analyser.fftSize = this.bufferLength * 2; // For time domain
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        const source = this.audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        
+        // Create offscreen canvas for this track
+        const offscreen = document.createElement('canvas');
+        offscreen.width = this.offscreenWidth; // 1800 pixels for 180 seconds
+        offscreen.height = this.canvas.height / 2; // Split for two tracks
+        const offCtx = offscreen.getContext('2d');
+        offCtx.fillStyle = '#000';
+        offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+        
+        this.analysers.push(analyser);
+        this.dataArrays.push(dataArray);
+        this.sources.push(source);
+        this.streams.push(stream);
+        this.offscreenCanvases.push({canvas: offscreen, ctx: offCtx, label});
+        
+        if (!this.isRendering) {
+            this.renderTimeline();
+        }
+        console.log(`Added stream: ${label}`);
+    }
+
+    renderTimeline() {
+        this.animationFrameId = requestAnimationFrame(() => this.renderTimeline());
+        this.isRendering = true;
+
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - this.lastFrameTime) / 1000; // Seconds since last frame
+        this.lastFrameTime = currentTime;
+        
+        // Update time offset
+        this.timeOffset += deltaTime;
+        if (this.timeOffset >= this.duration) {
+            this.timeOffset -= this.duration; // Loop back to keep within 180 seconds
+            // Optional: Reset offscreen canvases to clear old data
+            this.offscreenCanvases.forEach(off => {
+                off.ctx.fillStyle = '#000';
+                off.ctx.fillRect(0, 0, off.canvas.width, off.canvas.height);
+            });
+        }
+
+        const trackHeight = this.canvas.height / this.offscreenCanvases.length;
+
+        this.offscreenCanvases.forEach((off, index) => {
+            const analyser = this.analysers[index];
+            const dataArray = this.dataArrays[index];
+            analyser.getByteTimeDomainData(dataArray);
+
+            const offCtx = off.ctx;
+            
+            // Calculate x position for new data (right edge of offscreen canvas)
+            const scrollStep = this.pixelsPerSecond * deltaTime; // Pixels to scroll per frame
+            const x = ((this.timeOffset * this.pixelsPerSecond) + off.canvas.width - 1) % off.canvas.width; // Right-to-left
+            
+            // Clear previous column with decay (fade old data)
+            offCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Slight fade for decay
+            offCtx.fillRect(x, 0, 1, off.canvas.height);
+            
+            // Draw new waveform slice
+            offCtx.strokeStyle = index === 0 ? '#0f0' : '#f00'; // Green for local, red for remote
+            offCtx.lineWidth = 1;
+            offCtx.beginPath();
+            
+            for (let i = 0; i < dataArray.length; i += Math.floor(dataArray.length / off.canvas.height)) {
+                const v = (dataArray[i] / 128.0) - 1; // -1 to 1
+                const y = (trackHeight / 2) + (v * (trackHeight / 2) * 0.5); // Reduce amplitude for visibility
+                if (i === 0) {
+                    offCtx.moveTo(x, y);
+                } else {
+                    offCtx.lineTo(x, y);
+                }
+            }
+            
+            offCtx.stroke();
+            
+            // Copy the last 1280 pixels to main canvas, scaled from 1800
+            this.ctx.clearRect(0, index * trackHeight, this.canvas.width, trackHeight);
+            const scaleFactor = this.canvas.width / this.offscreenWidth; // 1280 / 1800 ≈ 0.711
+            const sourceX = Math.max(0, Math.floor((x - this.canvas.width / scaleFactor) % this.offscreenWidth));
+            this.ctx.drawImage(
+                off.canvas,
+                sourceX,
+                0,
+                this.canvas.width / scaleFactor,
+                off.canvas.height,
+                0,
+                index * trackHeight,
+                this.canvas.width,
+                trackHeight
+            );
+            
+            // Draw label
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '12px Arial';
+            this.ctx.fillText(off.label, 10, (index * trackHeight) + 20);
+        });
+    }
+
+    stopRendering() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        this.isRendering = false;
+    }
+}
+// Reduced timeline update frequency in main loop
+let timelineUpdateCounter = 0;
+const TIMELINE_UPDATE_INTERVAL = 2; // Update every 2 frames instead of every frame
+
+// function updateAudioTimeline() {
+//     if (!audioTimeline) {
+//         if (globalAudioContext && pc && pc.connectionState === 'connected') {
+//             initializeAudioTimeline();
+//         }
+//         return;
+//     }
+    
+//     // Update logic every frame
+//     audioTimeline.update();
+    
+//     // But only draw every few frames
+//     // timelineUpdateCounter++;
+//     // if (timelineUpdateCounter >= TIMELINE_UPDATE_INTERVAL) {
+//         audioTimeline.draw();
+//     //     timelineUpdateCounter = 0;
+//     // }
+// }
+
+// Keep the same initialization and control functions
+function initializeAudioTimeline() {
+    if (!window.audioTimeline) {
+        window.audioTimeline = new AudioTimeline();
+        document.body.appendChild(window.audioTimeline.canvas);
+        
+        // Add local mic if available
+        if (globalMicStream) {
+            window.audioTimeline.addStream(globalMicStream, 'Local');
+        }
+        
+        // Add existing remote streams
+        if (window.pc) {
+            const receivers = window.pc.getReceivers();
+            receivers.forEach((receiver, index) => {
+                if (receiver.track && receiver.track.kind === 'audio') {
+                    const stream = new MediaStream([receiver.track]);
+                    window.audioTimeline.addStream(stream, `Remote ${index + 1}`);
+                    console.log(`Connected existing remote stream ${index + 1} to timeline`);
+                }
+            });
+        } else {
+            console.warn("No pc available for remote streams");
+        }
+    }
+}
+
+let audioTimeline = null
+let initaud=0 
+function handleTimelineControls() {
+    if (keysPressed['t']) {
+        initializeAudioTimeline();
+    }
+    if (keysPressed['y']) {
+        if (window.audioTimeline) {
+            window.audioTimeline.stopRendering();
+            window.audioTimeline.canvas.remove();
+            window.audioTimeline = null;
+        }
+    }
+}
+
+
+// Add this to your existing main() function:
+// updateAudioTimeline(); // Add after canvas clearing
+// handleTimelineControls(); // Add with other key handlers
+
+
+
 let room = new RoomShape(5)
 let pix = canvas_context.getImageData(0, 0, 1280, 720)
-let rect1 = new Rectangle(0, 150, 1280, 40, "green")
 function indexer(point, width) {
     const x = Math.floor(point.x);
     const y = Math.floor(point.y);
@@ -3161,102 +3395,98 @@ function playRemoteStream(stream) {
 
 
 // Play incoming audio
+
+
 async function initWebRTC() {
     const pcInstance = new RTCPeerConnection({
-  iceServers: [
-    // ✅ Google STUNs
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" },
+        iceServers: [
+            // Google STUNs
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" },
+            { urls: "stun:stun4.l.google.com:19302" },
 
-    // ✅ Free TURN (metered.ca relay)
-    {
-      urls: [
-        "turn:openrelay.metered.ca:80",
-        "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp"
-      ],
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    },
+            // Free TURN (metered.ca relay)
+            {
+                urls: [
+                    "turn:openrelay.metered.ca:80",
+                    "turn:openrelay.metered.ca:443",
+                    "turn:openrelay.metered.ca:443?transport=tcp"
+                ],
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            },
 
-    // ✅ Another community/free STUN
-    { urls: "stun:stun.stunprotocol.org:3478" },
-    { urls: "stun:stun.services.mozilla.com" },
-
-    // (Optional) Add your own coTURN if you deploy one
-    // {
-    //   urls: "turn:your.turn.server:3478",
-    //   username: "youruser",
-    //   credential: "yourpass"
-    // }
-  ]
-});
-
-
-  // --- Debug helper: test audio tracks & states ---
-  window.testWebRTCAudio = function () {
-    if (!pcInstance) {
-      console.warn("No pcInstance available for testWebRTCAudio");
-      return;
-    }
-    console.log("WebRTC Connection States:", {
-      connection: pcInstance.connectionState,
-      ice: pcInstance.iceConnectionState,
-      signaling: pcInstance.signalingState,
+            // Another community/free STUN
+            { urls: "stun:stun.stunprotocol.org:3478" },
+            { urls: "stun:stun.services.mozilla.com" }
+        ]
     });
 
-    console.log("Local senders:", pcInstance.getSenders().length);
-    console.log("Remote receivers:", pcInstance.getReceivers().length);
-
-    pcInstance.getReceivers().forEach((receiver, i) => {
-      if (receiver.track && receiver.track.kind === "audio") {
-        console.log(`Remote audio track ${i}:`, {
-          enabled: receiver.track.enabled,
-          muted: receiver.track.muted,
-          readyState: receiver.track.readyState,
-          id: receiver.track.id,
-        });
-      }
-    });
-
-    pcInstance.getStats().then(stats => {
-      stats.forEach(report => {
-        if (report.type === "candidate-pair" && report.state === "succeeded") {
-          console.log("✅ Selected candidate pair:", {
-            local: report.localCandidateId,
-            remote: report.remoteCandidateId,
-            nominated: report.nominated,
-            bytesSent: report.bytesSent,
-            bytesReceived: report.bytesReceived,
-          });
+    // Debug helper: test audio tracks & states
+    window.testWebRTCAudio = function () {
+        if (!pcInstance) {
+            console.warn("No pcInstance available for testWebRTCAudio");
+            return;
         }
-      });
-    });
-  };
+        console.log("WebRTC Connection States:", {
+            connection: pcInstance.connectionState,
+            ice: pcInstance.iceConnectionState,
+            signaling: pcInstance.signalingState,
+        });
 
-  // --- Remote audio playback ---
-  pcInstance.ontrack = (event) => {
+        console.log("Local senders:", pcInstance.getSenders().length);
+        console.log("Remote receivers:", pcInstance.getReceivers().length);
+
+        pcInstance.getReceivers().forEach((receiver, i) => {
+            if (receiver.track && receiver.track.kind === "audio") {
+                console.log(`Remote audio track ${i}:`, {
+                    enabled: receiver.track.enabled,
+                    muted: receiver.track.muted,
+                    readyState: receiver.track.readyState,
+                    id: receiver.track.id,
+                });
+            }
+        });
+
+        pcInstance.getStats().then(stats => {
+            stats.forEach(report => {
+                if (report.type === "candidate-pair" && report.state === "succeeded") {
+                    console.log("Selected candidate pair:", {
+                        local: report.localCandidateId,
+                        remote: report.remoteCandidateId,
+                        nominated: report.nominated,
+                        bytesSent: report.bytesSent,
+                        bytesReceived: report.bytesReceived,
+                    });
+                }
+            });
+        });
+    };
+
+    // Enhanced ontrack handler that integrates with audio timeline
+// In initWebRTC() - update ontrack to add to timeline
+pcInstance.ontrack = (event) => {
     if (event.track.kind !== "audio") return;
 
     console.log("Remote audio track received:", {
-      enabled: event.track.enabled,
-      muted: event.track.muted,
-      readyState: event.track.readyState,
-      id: event.track.id,
+        enabled: event.track.enabled,
+        muted: event.track.muted,
+        readyState: event.track.readyState,
+        id: event.track.id,
     });
 
+    // Setup audio element for playback
     let audioEl = document.getElementById("remoteAudio");
     if (!audioEl) {
-      audioEl = document.createElement("audio");
-      audioEl.id = "remoteAudio";
-      audioEl.autoplay = true;
-      audioEl.controls = true;
-      audioEl.muted = false;
-      audioEl.volume = 1.0;
-      document.body.appendChild(audioEl);
+        audioEl = document.createElement("audio");
+        audioEl.id = "remoteAudio";
+        audioEl.autoplay = true;
+        audioEl.controls = true;
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        document.body.appendChild(audioEl);
     }
 
     audioEl.srcObject = event.streams[0];
@@ -3266,39 +3496,61 @@ async function initWebRTC() {
     const tryPlay = () => audioEl.play().catch(() => {});
     tryPlay();
 
+    // Connect to audio timeline if it exists
+    if (window.audioTimeline) {
+        window.audioTimeline.addStream(event.streams[0], 'Remote');
+        console.log(6); // This should now hit when new tracks arrive
+    }
+
     event.track.onunmute = () => {
-      console.log("Remote track unmuted:", event.track.id);
-      tryPlay();
+        tryPlay();
     };
 
     audioEl.onloadedmetadata = () => {
-      console.log("Audio element metadata loaded");
-      tryPlay();
+        tryPlay();
     };
 
     const poll = setInterval(() => {
-      if (!event.track.muted) {
-        console.log("Polling detected unmuted track");
-        tryPlay();
-        clearInterval(poll);
-      }
+        if (!event.track.muted) {
+            tryPlay();
+            clearInterval(poll);
+        }
     }, 500);
-  };
+};
+    pcInstance.onicecandidate = (event) => {
+        if (event.candidate) {
+            robust.send(JSON.stringify({ candidate: event.candidate }));
+            // console.log("ICE candidate:", event.candidate.candidate);
+        }
+    };
 
-  pcInstance.onicecandidate = (event) => {
-    if (event.candidate) {
-      robust.send(JSON.stringify({ candidate: event.candidate }));
-      console.log("ICE candidate:", event.candidate.candidate);
-    }
-  };
+    pcInstance.onconnectionstatechange = () => {
+        // console.log("Connection state:", pcInstance.connectionState);
+        // console.log("ICE connection state:", pcInstance.iceConnectionState);
+        // console.log("ICE gathering state:", pcInstance.iceGatheringState);
+        
+        // Auto-initialize timeline when WebRTC connects
+        if (pcInstance.connectionState === 'connected') {
+            if (!window.audioTimeline) {
+                setTimeout(() => {
+                    initializeAudioTimeline();
+                    // console.log("Audio timeline auto-initialized on WebRTC connection");
+                }, 1000);
+            } else {
+                // If timeline already exists, try to connect existing streams
+                const receivers = pcInstance.getReceivers();
+                receivers.forEach(receiver => {
+                    if (receiver.track && receiver.track.kind === 'audio') {
+                        const stream = new MediaStream([receiver.track]);
+                        window.audioTimeline.connectToRemoteStream(stream);
+                        console.log("Connected existing WebRTC stream to timeline");
+                    }
+                });
+            }
+        }
+    };
 
-  pcInstance.onconnectionstatechange = () => {
-    console.log("Connection state:", pcInstance.connectionState);
-    console.log("ICE connection state:", pcInstance.iceConnectionState);
-    console.log("ICE gathering state:", pcInstance.iceGatheringState);
-  };
-
-  return pcInstance;
+    return pcInstance;
 }
 
 
@@ -3422,8 +3674,8 @@ window.addEventListener("keyup", e => {
 
 async function main() {
 
-
-  console.log(nodes)
+  handleTimelineControls()
+  // console.log(nodes)
     timeip++
     if(timeip > timestep){
         let lister = []
@@ -3671,6 +3923,7 @@ async function main() {
   // }
 
 
+  // updateAudioTimeline();
 
 
   
@@ -3820,13 +4073,13 @@ async function processMessage(workItem) {
   const { event, rawSocket, data } = workItem;
   
   // DEBUG: Log what type of message we're processing
-  console.log("Processing message type:", typeof data, "size:", data.byteLength || data.length);
+  // console.log("Processing message type:", typeof data, "size:", data.byteLength || data.length);
   if (typeof data === "string") {
     try {
       const parsed = JSON.parse(data);
-      console.log("String message content:", Object.keys(parsed));
+      // console.log("String message content:", Object.keys(parsed));
     } catch (e) {
-      console.log("Non-JSON string message");
+      // console.log("Non-JSON string message");
     }
   }
   
@@ -3939,14 +4192,14 @@ async function processMessage(workItem) {
 
     // ---------- AUDIO PACKETS (ArrayBuffer) ----------
     } else if (data instanceof ArrayBuffer) {
-      console.log("Processing ArrayBuffer of size:", data.byteLength);
+      // console.log("Processing ArrayBuffer of size:", data.byteLength);
       
     //   // Debug: Let's see what's act
     
       
       // Rest of ArrayBuffer processing for larger messages
       if (data.byteLength < 4) {
-        console.warn("ArrayBuffer too small for metadata length");
+        // console.warn("ArrayBuffer too small for metadata length");
         return;
       }
       
@@ -3955,7 +4208,7 @@ async function processMessage(workItem) {
       
       // Validate metadata length is reasonable and within bounds
       if (metadataLength < 0 || metadataLength > data.byteLength - 4 || metadataLength > 10000) {
-        console.log("Skipping ArrayBuffer with invalid metadata length:", metadataLength);
+        // console.log("Skipping ArrayBuffer with invalid metadata length:", metadataLength);
         return;
       }
       
@@ -3964,7 +4217,7 @@ async function processMessage(workItem) {
       try {
         metadataBytes = new Uint8Array(data, 4, metadataLength);
       } catch (e) {
-        console.warn("Failed to create metadata bytes:", e);
+        // console.warn("Failed to create metadata bytes:", e);
         return;
       }
       
@@ -4109,7 +4362,7 @@ processSignalingMessage = async function(msg) {
 };
 setTimeout(() => {
     exposeToGlobal();
-    console.log("Variables exposed to global scope");
+    // console.log("Variables exposed to global scope");
 }, 1000);
 
 // optional: when underlying raw socket opens, attach things that depended on ws.open
@@ -4121,25 +4374,25 @@ window.onRobustMessage = async (event, rawSocket) => {
   if (typeof event.data === "string") {
     try {
       msg = JSON.parse(event.data);
-      console.log("Received JSON string:", msg);
+      // console.log("Received JSON string:", msg);
     } catch (err) {
-      console.warn("Failed to parse string message:", err, event.data);
+      // console.warn("Failed to parse string message:", err, event.data);
       msg = null;
     }
   } else if (event.data instanceof ArrayBuffer) {
     try {
       const text = new TextDecoder().decode(event.data);
       msg = JSON.parse(text);
-      console.log("Received JSON ArrayBuffer:", msg);
+      // console.log("Received JSON ArrayBuffer:", msg);
     } catch (err) {
-      console.log("Binary message (not JSON), passing through:", err);
+      // console.log("Binary message (not JSON), passing through:", err);
       msg = null;
     }
   }
 
   // --- Handle special resendList messages immediately ---
   if (msg && msg[0] === "resendList" && msg[1] === "please") {
-    console.log("Processing resendList request");
+    // console.log("Processing resendList request");
     try {
       // Disable sending for matching node IDs
       for (let k = 0; k < nodes.length; k++) {
@@ -4155,10 +4408,10 @@ window.onRobustMessage = async (event, rawSocket) => {
 
   // --- Handle WebRTC signaling (offer/answer/candidate) ---
   if (msg && (msg.offer || msg.answer || msg.candidate)) {
-    console.log("Processing WebRTC signaling:", Object.keys(msg));
+    // console.log("Processing WebRTC signaling:", Object.keys(msg));
 
     if (!window.webrtcInitialized) {
-      console.log("WebRTC not ready — queueing signaling message");
+      // console.log("WebRTC not ready — queueing signaling message");
       if (!window.pendingSignalingMessages) window.pendingSignalingMessages = [];
       window.pendingSignalingMessages.push(msg);
       return;
@@ -4232,7 +4485,7 @@ function armResumeAudioContext() {
   const ctx = Tone.getContext().rawContext;
   if (ctx.state === "suspended") {
     const resume = () => ctx.resume().then(() => {
-      console.log("AudioContext resumed by user gesture");
+      // console.log("AudioContext resumed by user gesture");
     });
     ["click", "keydown", "touchstart", "pointerdown"].forEach(evt => {
       document.addEventListener(evt, resume, { once: true });
