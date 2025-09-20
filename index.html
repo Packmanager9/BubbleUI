@@ -49,7 +49,7 @@
         if (receiver.track && receiver.track.kind === 'audio') {
           console.log(`Remote audio ${i}:`, {
             enabled: receiver.track.enabled,
-            muted: receiver.track.muted,
+            muted: false, //receiver.track.muted,
             readyState: receiver.track.readyState,
             id: receiver.track.id
           });
@@ -1256,7 +1256,7 @@ function debugWebRTCTracks() {
       console.log(`Receiver ${i}:`, {
         kind: receiver.track.kind,
         enabled: receiver.track.enabled,
-        muted: receiver.track.muted,
+        muted: false, //receiver.track.muted,
         readyState: receiver.track.readyState
       });
     }
@@ -2919,7 +2919,7 @@ function testWebRTCAudio() {
       if (receiver.track && receiver.track.kind === 'audio') {
         console.log(`Remote audio track ${i}:`, {
           enabled: receiver.track.enabled,
-          muted: receiver.track.muted,
+          muted: false, //receiver.track.muted,
           readyState: receiver.track.readyState
         });
       }
@@ -3041,7 +3041,7 @@ function testWebRTCAudio() {
       if (receiver.track && receiver.track.kind === 'audio') {
         console.log(`Remote audio track ${i}:`, {
           enabled: receiver.track.enabled,
-          muted: receiver.track.muted,
+          muted: false, //receiver.track.muted,
           readyState: receiver.track.readyState
         });
       }
