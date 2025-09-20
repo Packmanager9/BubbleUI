@@ -3305,10 +3305,10 @@ function disableMic() {
 
 // Example: hold Spacebar for PTT
 window.addEventListener("keydown", e => {
-  if (e.code === "Space") enableMic();
+  if (e.code === "z") enableMic();
 });
 window.addEventListener("keyup", e => {
-  if (e.code === "Space") disableMic();
+  if (e.code === "z") disableMic();
 });
 
 
