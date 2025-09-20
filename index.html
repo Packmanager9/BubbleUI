@@ -503,78 +503,88 @@ function scheduleMessageProcessing() {
     processMessageQueue();
   }, { timeout: 50 }); // fallback timeout
 }
+
 async function processSignalingMessage(msg) {
     if (!pc) {
         console.error("No peer connection available");
         return;
     }
 
-    if (pc.connectionState === 'closed') {
+    if (pc.connectionState === "closed") {
         console.error("Peer connection is closed");
         return;
     }
 
-    try {
-        if (msg.offer) {
-            console.log("Processing offer, current signaling state:", pc.signalingState);
-            
-            // Perfect negotiation with better collision handling
-            const offerCollision = (msg.offer.type === "offer") && 
-                                 (makingOffer || pc.signalingState !== "stable");
-            
-            ignoreOffer = !isPolite && offerCollision;
-            
-            if (ignoreOffer) {
-                console.log("Ignoring offer due to collision (impolite peer)");
-                return;
-            }
-            
-            // Set remote description
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-            
-            // Create and send answer
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            robust.send(JSON.stringify({ answer }));
-            
-            console.log("Answer sent successfully");
-            
-        } else if (msg.answer) {
-            console.log("Processing answer");
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
-            
-        } else if (msg.candidate) {
-            console.log("Processing ICE candidate");
-            
+    try {// --- inside processSignalingMessage ---
+if (msg.offer) {
+    console.log("Processing offer, current signaling state:", pc.signalingState);
+
+    const offerCollision =
+        (makingOffer || pc.signalingState !== "stable");
+
+    ignoreOffer = !isPolite && offerCollision;
+
+    if (ignoreOffer) {
+        console.log("Ignoring offer due to collision (impolite peer)");
+        return;
+    }
+
+    if (offerCollision && isPolite) {
+        console.warn("⚠️ Glare detected (polite peer) → rolling back");
+        await pc.setLocalDescription({ type: "rollback" });
+    }
+
+    // ✅ 1. Set remote description (offer)
+    await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+
+    // ✅ 2. Flush queued ICE after remote description
+    if (pendingIceCandidates.length > 0) {
+        console.log(`Flushing ${pendingIceCandidates.length} pending ICE candidates (after offer)`);
+        for (const c of pendingIceCandidates) {
             try {
-                if (pc.remoteDescription && pc.remoteDescription.sdp) {
-                    await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-                } else {
-                    console.log("Queueing ICE candidate - no remote description yet");
-                    pendingIceCandidates.push(msg.candidate);
-                }
-            } catch (e) {
-                if (!ignoreOffer) {
-                    console.warn("Failed to add ICE candidate:", e);
-                }
+                await pc.addIceCandidate(new RTCIceCandidate(c));
+            } catch (err) {
+                console.error("Failed to add pending candidate:", err);
             }
         }
-        
-        // Process queued candidates after setting remote description
-        while (pendingIceCandidates.length > 0 && pc.remoteDescription) {
-            const candidate = pendingIceCandidates.shift();
-            try {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (e) {
-                console.warn("Failed to add queued ICE candidate:", e);
+        pendingIceCandidates = [];
+    }
+
+    // Then create & send answer…
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    robust.send(JSON.stringify({ answer }));
+    console.log("Answer sent successfully");
+}
+
+else if (msg.answer) {
+    console.log("Processing answer, current state:", pc.signalingState);
+
+    if (pc.signalingState === "have-local-offer") {
+        // ✅ 1. Set remote description (answer)
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+
+        // ✅ 2. Flush queued ICE after remote description
+        if (pendingIceCandidates.length > 0) {
+            console.log(`Flushing ${pendingIceCandidates.length} pending ICE candidates (after answer)`);
+            for (const c of pendingIceCandidates) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(c));
+                } catch (err) {
+                    console.error("Failed to add pending candidate:", err);
+                }
             }
+            pendingIceCandidates = [];
         }
-        
+    } else {
+        console.warn("Ignoring unexpected answer in state:", pc.signalingState);
+    }
+}
+
     } catch (error) {
         console.error("Error processing signaling message:", error);
-        
-        // If we get a signaling error, might need to reset
-        if (error.name === 'InvalidStateError') {
+
+        if (error.name === "InvalidStateError") {
             console.log("Invalid state error - resetting connection");
             await handleConnectionFailure();
         }
@@ -582,6 +592,7 @@ async function processSignalingMessage(msg) {
         makingOffer = false;
     }
 }
+
 
 async function processQueuedSignalingMessages() {
   console.log(`Processing ${pendingSignalingMessages.length} queued signaling messages`);
@@ -3051,14 +3062,18 @@ function playRemoteStream(stream) {
 async function initWebRTC() {
   const pcInstance = new RTCPeerConnection({
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      {
-        urls: "turn:openrelay.metered.ca:443",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
+  { urls: "stun:stun.l.google.com:19302" },
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80",
+      "turn:openrelay.metered.ca:443",
+      "turn:openrelay.metered.ca:443?transport=tcp"
     ],
+    username: "openrelayproject",
+    credential: "openrelayproject"
+  }
+]
+
     // leave default: "all" so host/srflx/relay can all be tried
   });
 
@@ -3154,6 +3169,7 @@ async function initWebRTC() {
   pcInstance.onicecandidate = (event) => {
     if (event.candidate) {
       robust.send(JSON.stringify({ candidate: event.candidate }));
+      console.log("ICE candidate:", event.candidate.candidate);
     }
   };
 
