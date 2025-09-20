@@ -448,14 +448,26 @@ async function initializeWebRTC() {
 
     // Attach mic tracks BEFORE signaling starts
     if (globalMicStream) {
-        globalMicStream.getTracks().forEach(track => {
-            console.log("Attaching local mic track:", track.id);
-            pc.addTrack(track, globalMicStream);
-        });
-        console.log("Microphone added to peer connection");
+  globalMicStream.getTracks().forEach(track => {
+    console.log("Mic track state before attach:", {
+      id: track.id,
+      enabled: track.enabled,
+      muted: track.muted,
+      readyState: track.readyState
+    });
+
+    if (track.readyState === "live") {
+      console.log("Attaching local mic track:", track.id);
+      pc.addTrack(track, globalMicStream);
     } else {
-        console.warn("No microphone stream available to attach");
+      console.warn("Skipping stale mic track:", track.id, track.readyState);
     }
+  });
+  console.log("Microphone added to peer connection (checked)");
+} else {
+  console.warn("No microphone stream available to attach");
+}
+
 
     // Force audio transceiver active
     pc.getTransceivers().forEach(t => {
