@@ -15,9 +15,56 @@
 
 
 
-
+<!-- Add this script tag in your <head> section, before your main script -->
+    <script>
+        // Request microphone access immediately on page load
+        let globalMicStream = null;
+        
+        async function requestMicrophoneAccess() {
+            try {
+                console.log("Requesting microphone access...");
+                globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log("Microphone access granted");
+                
+                // Optional: Show visual indicator that mic is ready
+                document.body.style.border = "2px solid green";
+                setTimeout(() => {
+                    if (document.body.style.border) {
+                        document.body.style.border = "";
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error("Microphone access denied:", error);
+                // Optional: Show visual indicator that mic was denied
+                document.body.style.border = "2px solid red";
+                setTimeout(() => {
+                    if (document.body.style.border) {
+                        document.body.style.border = "";
+                    }
+                }, 3000);
+            }
+        }
+        
+        // Request access as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', requestMicrophoneAccess);
+        } else {
+            requestMicrophoneAccess();
+        }
+        
+        // Make the stream available globally for your WebRTC code
+        window.getGlobalMicStream = () => globalMicStream;
+        </script>
 
     <script type="module">
+
+let pc = null;
+let signaling = {};
+let webrtcInitialized = false;
+let pendingSignalingMessages = [];
+
+
 
 let globalAudioContext = null; // Reuse audio context
 let links = []
@@ -122,6 +169,8 @@ let rightClick = 0
 // Create a single empty buffer to reuse
 // let emptyBuffer = 
 
+
+
 // let audioLock = 1 //turns off chimes
 function visualizeAudioBuffer(audioBuffer, canvas, x = 0, y = 0, width = canvas.width, height = canvas.height) {
     const ctx = canvas.getContext("2d");
@@ -176,6 +225,118 @@ function visualizeAudioBuffer(audioBuffer, canvas, x = 0, y = 0, width = canvas.
 
       let ws = new WebSocket(wsUrl);
 
+      const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true});
+
+// expose minimal `ws` compatibility for the rest of your code:
+ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
+
+
+// Message queue and processing system// Message queue and processing system
+let messageQueue = [];
+let processingMessages = false;
+const MAX_MESSAGES_PER_BATCH = 5;
+const PROCESSING_INTERVAL = 16; // ~60fps
+
+// Quick message handler - just queue the work
+
+
+window.onRobustMessage = async (event, rawSocket) => {
+  let msg = null;
+
+  // Parse JSON messages
+  if (typeof event.data === "string") {
+    try {
+      msg = JSON.parse(event.data);
+    } catch {
+      msg = null;
+    }
+  }
+
+  // Handle WebRTC signaling - WITH PROPER SEQUENCING
+  if (msg && (msg.offer || msg.answer || msg.candidate)) {
+    if (!webrtcInitialized) {
+      // WebRTC not ready yet - queue the message
+      console.log("Queueing signaling message until WebRTC is ready:", msg);
+      pendingSignalingMessages.push(msg);
+      return;
+    }
+
+    // WebRTC is ready - process the message
+    try {
+      await processSignalingMessage(msg);
+    } catch (error) {
+      console.error("WebRTC signaling error:", error);
+    }
+    return; // Don't process WebRTC messages in regular queue
+  }
+
+  // Queue all other messages for regular processing
+  try {
+    const workItem = {
+      event,
+      rawSocket,
+      timestamp: Date.now(),
+      data: event.data,
+    };
+    messageQueue.push(workItem);
+
+    if (!processingMessages) {
+      scheduleMessageProcessing();
+    }
+  } catch (e) {
+    console.error("Failed to queue message:", e);
+  }
+};
+
+
+function scheduleMessageProcessing() {
+  if (processingMessages) return;
+  
+  processingMessages = true;
+  requestIdleCallback(() => {
+    processMessageQueue();
+  }, { timeout: 50 }); // fallback timeout
+}
+
+
+async function processSignalingMessage(msg) {
+  if (!pc) {
+    console.error("No peer connection available");
+    return;
+  }
+
+  if (msg.offer) {
+    console.log("Processing offer");
+    await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    robust.send(JSON.stringify({ answer }));
+  } else if (msg.answer) {
+    console.log("Processing answer");
+    await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+  } else if (msg.candidate) {
+    console.log("Processing ICE candidate");
+    await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+  }
+}
+
+
+
+async function processQueuedSignalingMessages() {
+  console.log(`Processing ${pendingSignalingMessages.length} queued signaling messages`);
+  
+  while (pendingSignalingMessages.length > 0) {
+    const msg = pendingSignalingMessages.shift();
+    try {
+      await processSignalingMessage(msg);
+      // Small delay between messages to avoid overwhelming the connection
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error("Error processing queued signaling message:", error);
+    }
+  }
+}
+
 
       // Robust WebSocket wrapper
 function makeRobustWebSocket(wsUrl, opts = {}) {
@@ -215,7 +376,7 @@ function makeRobustWebSocket(wsUrl, opts = {}) {
     raw.binaryType = "arraybuffer";
     ready = false;
 
-    raw.addEventListener('open', () => {
+    raw.addEventListener('open', () => { 
       log('open');
       reconnectAttempts = 0;
       ready = true;
@@ -237,11 +398,18 @@ function makeRobustWebSocket(wsUrl, opts = {}) {
     });
 
     raw.addEventListener('message', (m) => {
+        // console.log(m)
       // forward to existing handlers
       if (typeof window.onRobustMessage === 'function') {
         window.onRobustMessage(m, raw);
       } else {
         // fallback: call socketize message handler if it reads 'ws' variable
+  
+        
+        
+
+
+
         log('message received - no onRobustMessage hook installed');
       }
     });
@@ -767,13 +935,155 @@ class Circle {
         return false
     }
 }
+async function mainSetup() {
+    pc = await initWebRTC();
+    signaling = setupSignaling(pc, robust);
+}
+
+function setupSignaling(pc, ws) {
+  async function sendOffer() {
+    try {
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: false
+      });
+      
+      // Log codecs for debugging
+      console.log("Offer SDP:", offer.sdp);
+      const audioCodecs = offer.sdp.match(/a=rtpmap:\d+ (\w+\/\d+)/g);
+      console.log("Available audio codecs:", audioCodecs);
+      
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ offer }));
+      console.log("Offer sent successfully");
+    } catch (error) {
+      console.error("Failed to send offer:", error);
+    }
+  }
+
+  async function sendAnswer(remoteOffer) {
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer));
+      const answer = await pc.createAnswer();
+      
+      // Log answer codecs
+      console.log("Answer SDP:", answer.sdp);
+      
+      await pc.setLocalDescription(answer);
+      ws.send(JSON.stringify({ answer }));
+      console.log("Answer sent successfully");
+    } catch (error) {
+      console.error("Failed to send answer:", error);
+    }
+  }
+
+  return { sendOffer, sendAnswer };
+}
+async function testMicrophone() {
+  try {
+    const stream = window.getGlobalMicStream();
+    if (!stream) {
+      console.error("No microphone stream available");
+      return;
+    }
+    
+    console.log("Microphone tracks:", stream.getTracks().map(t => ({
+      kind: t.kind,
+      enabled: t.enabled,
+      muted: t.muted,
+      readyState: t.readyState
+    })));
+    
+    // Create a local audio element to hear yourself (for testing only)
+    const testAudio = document.createElement('audio');
+    testAudio.srcObject = stream;
+    testAudio.muted = false; // WARNING: This will cause feedback!
+    testAudio.volume = 0.1; // Low volume to reduce feedback
+    document.body.appendChild(testAudio);
+    await testAudio.play();
+    
+    console.log("Playing microphone audio for 3 seconds (you should hear yourself)");
+    setTimeout(() => {
+      testAudio.remove();
+      console.log("Microphone test complete");
+    }, 3000);
+    
+  } catch (error) {
+    console.error("Microphone test failed:", error);
+  }
+}
+
+function debugWebRTCTracks() {
+  if (!pc) {
+    console.log("No peer connection");
+    return;
+  }
+  
+  console.log("Local tracks:");
+  pc.getSenders().forEach((sender, i) => {
+    if (sender.track) {
+      console.log(`Sender ${i}:`, {
+        kind: sender.track.kind,
+        enabled: sender.track.enabled,
+        muted: sender.track.muted,
+        readyState: sender.track.readyState
+      });
+    }
+  });
+  
+  console.log("Remote tracks:");
+  pc.getReceivers().forEach((receiver, i) => {
+    if (receiver.track) {
+      console.log(`Receiver ${i}:`, {
+        kind: receiver.track.kind,
+        enabled: receiver.track.enabled,
+        muted: receiver.track.muted,
+        readyState: receiver.track.readyState
+      });
+    }
+  });
+}
+
+
+function setupConnectionRecovery() {
+  if (pc) {
+    pc.onconnectionstatechange = () => {
+      console.log("WebRTC connection state:", pc.connectionState);
+      
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        console.log("Connection failed, attempting to restart...");
+        setTimeout(() => {
+          if (signaling && signaling.sendOffer) {
+            signaling.sendOffer();
+          }
+        }, 2000);
+      }
+    };
+  }
+}
+
+
 function setUp(canvas_pass, style = "#493939") {
     canvas = canvas_pass
     canvas_context = canvas.getContext('2d');
     canvas.style.background = style
-    window.setInterval(function () {
-        main()
-    }, 15)
+
+
+// Run once at startup
+mainSetup();
+
+// Your 15 ms loop remains untouched
+function mainLoop() {
+    main()
+}
+setInterval(mainLoop, 15);
+
+
+
+
+
+
+
     document.addEventListener('keydown', (event) => {
         // if(event.key  == ' '){
         event.preventDefault()
@@ -2285,6 +2595,141 @@ function childSearch(children, color){
 
 }
 
+
+
+
+async function getMicStream() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return stream;
+  } catch (err) {
+    console.error("Microphone access denied:", err);
+  }
+}
+
+
+function playRemoteStream(stream) {
+  const audio = document.createElement("audio");
+  audio.srcObject = stream;
+  audio.autoplay = true;
+  document.body.appendChild(audio); // hidden playback
+}
+
+
+// Play incoming audio
+
+
+
+async function initWebRTC() {
+    const pcInstance = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+    // Play remote audio
+    pcInstance.ontrack = async (event) => {
+        console.log("Remote audio track received:", event.streams[0]);
+        
+        const audioEl = document.createElement("audio");
+        audioEl.srcObject = event.streams[0];
+        audioEl.autoplay = true;
+        audioEl.volume = 1.0; // Ensure full volume
+        audioEl.muted = false; // Ensure not muted
+        audioEl.style.display = 'none';
+        
+        // Add explicit play promise handling
+        audioEl.addEventListener('loadedmetadata', async () => {
+            try {
+                await audioEl.play();
+                console.log("Remote audio playing successfully");
+            } catch (error) {
+                console.error("Failed to play remote audio:", error);
+                // Try to play on user interaction
+                document.addEventListener('click', async () => {
+                    try {
+                        await audioEl.play();
+                        console.log("Remote audio started after user interaction");
+                    } catch (e) {
+                        console.error("Still failed to play:", e);
+                    }
+                }, { once: true });
+            }
+        });
+        
+        audioEl.addEventListener('error', (e) => {
+            console.error("Audio element error:", e);
+        });
+        
+        document.body.appendChild(audioEl);
+    };
+    // Handle ICE candidates
+    pcInstance.onicecandidate = (event) => {
+        if (event.candidate) {
+            robust.send(JSON.stringify({ candidate: event.candidate }));
+        }
+    };
+    
+    pcInstance.onconnectionstatechange = () => {
+        console.log("Connection state:", pcInstance.connectionState);
+        console.log("ICE connection state:", pcInstance.iceConnectionState);
+        console.log("ICE gathering state:", pcInstance.iceGatheringState);
+    };
+    // Add local microphone
+    try {
+        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStream.getTracks().forEach(track => pcInstance.addTrack(track, localStream));
+        console.log("Local microphone added to peer connection");
+    } catch (error) {
+        console.error("Failed to access microphone:", error);
+    }
+    
+    return pcInstance;
+}
+
+
+
+
+
+
+
+// Add your microphone stream
+const stream = await getMicStream();
+stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+// When a remote track comes in, play it
+pc.ontrack = (event) => {
+  const audio = document.createElement("audio");
+  audio.srcObject = event.streams[0];
+  audio.autoplay = true;
+  document.body.appendChild(audio);
+};
+
+
+pc.onicecandidate = (event) => {
+  if (event.candidate) {
+    sendSignal("candidate", event.candidate);
+  }
+};
+
+
+async function startCall() {
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  ws.send(JSON.stringify({ offer }));
+}
+
+
+// Now you need signaling (via WebSocket or any server) to exchange
+// pc.createOffer(), pc.createAnswer(), and ICE candidates
+
+
+
+
+
+function sendSignal(type, payload) {
+  robust.send(JSON.stringify({ [type]: payload }));
+}
+
+
+
 async function main() {
 
 
@@ -2304,6 +2749,7 @@ async function main() {
             for(let k = 0;k<nodes.length;k++){
                 nodes[k].sending  = 1
             }
+            // testMicrophone()
         }
 
   hovercheck--
@@ -2520,6 +2966,11 @@ async function main() {
   //     }
   //   }
   // }
+
+
+
+
+  
 }
 
 
@@ -2576,6 +3027,8 @@ ws.onopen = () => {
     console.log("WS connected!");
 };
 
+
+
 // helper: send object + audio file
 // helper: send object + audio file
 
@@ -2617,51 +3070,13 @@ async function sendAudioObject(id, file) {
 
 
 // --- replace const ws = new WebSocket(wsUrl); ---
-const robust = makeRobustWebSocket(wsUrl, {heartbeatInterval: 20000, debug: true});
-
-// expose minimal `ws` compatibility for the rest of your code:
-ws = robust.raw; // NOTE: raw will be null initially; don't call ws.send() directly
-
 // instead of calling socketize(ws) directly, hook into the wrapper:
 
 
 
 
-// Message queue and processing system// Message queue and processing system
-let messageQueue = [];
-let processingMessages = false;
-const MAX_MESSAGES_PER_BATCH = 5;
-const PROCESSING_INTERVAL = 16; // ~60fps
 
-// Quick message handler - just queue the work
-window.onRobustMessage = async (event, rawSocket) => {
-  // Quick validation and queuing
-  try {
-    const workItem = { 
-      event, 
-      rawSocket, 
-      timestamp: Date.now(),
-      data: event.data 
-    };
-    messageQueue.push(workItem);
-    
-    // Start processing if not already running
-    if (!processingMessages) {
-      scheduleMessageProcessing();
-    }
-  } catch (e) {
-    console.error("Failed to queue message:", e);
-  }
-};
 
-function scheduleMessageProcessing() {
-  if (processingMessages) return;
-  
-  processingMessages = true;
-  requestIdleCallback(() => {
-    processMessageQueue();
-  }, { timeout: 50 }); // fallback timeout
-}
 
 async function processMessageQueue() {
   let processed = 0;
@@ -2804,7 +3219,7 @@ async function processMessage(workItem) {
       if (metadataLength < 0 || metadataLength > data.byteLength - 4) {
         console.warn("Invalid metadata length:", metadataLength, "buffer size:", data.byteLength);
         return;
-      }
+      } 
       
       // Safe construction of metadata bytes
       let metadataBytes;
@@ -2950,16 +3365,38 @@ function trimSeenIds() {
 
 
 // optional: when underlying raw socket opens, attach things that depended on ws.open
-window.onRobustOpen = (rawSocket) => {
-  console.log('robust socket open, rawSocket=', rawSocket);
-  // If other modules depend on ws variable being present, you can set window.ws = rawSocket
+window.onRobustOpen = async (rawSocket) => {
+  console.log("WebSocket connected, initializing WebRTC...");
+  
+  try {
+    // Initialize WebRTC
+    pc = await initWebRTC();
+    signaling = setupSignaling(pc, robust);
+    webrtcInitialized = true;
+    
+    console.log("WebRTC initialized successfully");
+    
+    // Process any messages that arrived while we were initializing
+    await processQueuedSignalingMessages();
+    
+    // ADD THIS LINE HERE:
+    setupConnectionRecovery();
+    
+    // Start the call after everything is ready
+    setTimeout(() => {
+      if (signaling && signaling.sendOffer) {
+        console.log("Sending initial offer");
+        signaling.sendOffer();
+      }
+    }, 500);
+    
+  } catch (error) {
+    console.error("Failed to initialize WebRTC:", error);
+    webrtcInitialized = false;
+  }
+  
   window.ws = rawSocket;
 };
-
-
-
-
-
 
 
 
