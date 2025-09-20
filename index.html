@@ -3291,33 +3291,31 @@ function ensureAudioContext() {
   }
 }
 ensureAudioContext();
-
-
 function enableMic() {
-  globalMicStream?.getAudioTracks().forEach(t => (
-  t.enabled = true,
-  t.muted = false
-  ));
+  globalMicStream?.getAudioTracks().forEach(t => {
+    t.enabled = true;
+  });
   console.log("🎙️ Mic enabled");
 }
 
 function disableMic() {
-  globalMicStream?.getAudioTracks().forEach(t => (
-    t.enabled = false,
-    t.muted = true
-
-  ));
+  globalMicStream?.getAudioTracks().forEach(t => {
+    t.enabled = false;
+  });
   console.log("🤫 Mic disabled");
 }
 
-// Example: hold Spacebar for PTT
+// Example: hold Z for PTT
 window.addEventListener("keydown", e => {
-  if (e.code === "z") enableMic();
+  if (e.code === "KeyZ") {
+    enableMic();
+  }
 });
 window.addEventListener("keyup", e => {
-  if (e.code === "z") disableMic();
+  if (e.code === "KeyZ") {
+    disableMic();
+  }
 });
-
 
 
 
