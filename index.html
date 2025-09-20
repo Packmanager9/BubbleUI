@@ -319,7 +319,6 @@ async function processSignalingMessage(msg) {
     return;
   }
 
-  // Add connection state check
   if (pc.connectionState === 'closed') {
     console.error("Peer connection is closed");
     return;
@@ -327,27 +326,41 @@ async function processSignalingMessage(msg) {
 
   try {
     if (msg.offer) {
-      console.log("Processing offer");
+      console.log("Processing offer, current signaling state:", pc.signalingState);
+      
+      // Handle offer collision - if we're in have-local-offer state, ignore remote offer
+      if (pc.signalingState === "have-local-offer") {
+        console.log("Offer collision detected - ignoring remote offer");
+        return;
+      }
+      
       await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       robust.send(JSON.stringify({ answer }));
+      
     } else if (msg.answer) {
-      console.log("Processing answer");
+      console.log("Processing answer, current signaling state:", pc.signalingState);
+      
+      // Only process answer if we're in have-local-offer state
+      if (pc.signalingState !== "have-local-offer") {
+        console.log("Received answer but not in have-local-offer state, ignoring");
+        return;
+      }
+      
       await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+      
     } else if (msg.candidate) {
       console.log("Processing ICE candidate");
-      // Add state check before adding candidate
-      if (pc.remoteDescription) {
+      if (pc.remoteDescription && pc.remoteDescription.sdp) {
         await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
       } else {
-        console.log("Queuing ICE candidate - no remote description yet");
+        console.log("Queueing ICE candidate - no remote description yet");
         pendingSignalingMessages.push(msg);
       }
     }
   } catch (error) {
     console.error("Error processing signaling message:", error);
-    // Don't throw - just log and continue
   }
 }
 
@@ -2653,65 +2666,69 @@ function playRemoteStream(stream) {
 
 // Play incoming audio
 
-
-
 async function initWebRTC() {
-    const pcInstance = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-    // Play remote audio
-    pcInstance.ontrack = async (event) => {
+  const pcInstance = new RTCPeerConnection({
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      // Add TURN server for better connectivity
+      { 
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ]
+  });
+
+  // Play remote audio
+  pcInstance.ontrack = async (event) => {
     console.log("REMOTE USER CONNECTED - Receiving their audio");
-    
     if (event.track.kind === 'audio') {
-        console.log("Remote audio track received:", {
-            enabled: event.track.enabled,
-            muted: event.track.muted,
-            readyState: event.track.readyState
-        });
+      console.log("Remote audio track received:", {
+        enabled: event.track.enabled,
+        muted: event.track.muted,
+        readyState: event.track.readyState
+      });
 
-        // Create audio element for remote stream
-        const audioEl = document.createElement("audio");
-        audioEl.srcObject = event.streams[0];
-        audioEl.autoplay = true;
-        audioEl.volume = 1.0;
-        audioEl.controls = false; // Remove controls for production
-        audioEl.style.display = 'none';
+      // Create audio element for remote stream
+      const audioEl = document.createElement("audio");
+      audioEl.srcObject = event.streams[0];
+      audioEl.autoplay = true;
+      audioEl.volume = 1.0;
+      audioEl.controls = false; // Remove controls for production
+      audioEl.style.display = 'none';
 
-        // Force unmute the track
-        if (event.track.muted) {
-            console.log("Unmuting remote track");
-        }
+      // Force unmute the track
+      if (event.track.muted) {
+        console.log("Unmuting remote track");
+      }
 
-        document.body.appendChild(audioEl);
-        
-        // Ensure audio plays
-        audioEl.play().catch(e => {
-            console.error("Failed to play remote audio:", e);
-        });
+      document.body.appendChild(audioEl);
 
-        console.log("Remote audio setup complete");
+      // Ensure audio plays
+      audioEl.play().catch(e => {
+        console.error("Failed to play remote audio:", e);
+      });
+
+      console.log("Remote audio setup complete");
     }
-};
-    // Handle ICE candidates
-    pcInstance.onicecandidate = (event) => {
-        if (event.candidate) {
-            robust.send(JSON.stringify({ candidate: event.candidate }));
-        }
-    };
-    
-    pcInstance.onconnectionstatechange = () => {
-        console.log("Connection state:", pcInstance.connectionState);
-        console.log("ICE connection state:", pcInstance.iceConnectionState);
-        console.log("ICE gathering state:", pcInstance.iceGatheringState);
-    };
-    
-    
-    return pcInstance;
+  };
+
+  // Handle ICE candidates
+  pcInstance.onicecandidate = (event) => {
+    if (event.candidate) {
+      robust.send(JSON.stringify({ candidate: event.candidate }));
+    }
+  };
+
+  pcInstance.onconnectionstatechange = () => {
+    console.log("Connection state:", pcInstance.connectionState);
+    console.log("ICE connection state:", pcInstance.iceConnectionState);
+    console.log("ICE gathering state:", pcInstance.iceGatheringState);
+  };
+
+  return pcInstance;
 }
-
-
-
 
 
 
