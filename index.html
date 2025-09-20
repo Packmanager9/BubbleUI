@@ -370,52 +370,65 @@ let processingMessages = false;
 const MAX_MESSAGES_PER_BATCH = 5;
 const PROCESSING_INTERVAL = 16; // ~60fps
 
+
 window.onRobustOpen = async (rawSocket) => {
-    console.log("WebSocket connected, initializing WebRTC...");
+  console.log("WebSocket connected, initializing WebRTC...");
 
-    try {
-        determinePoleness();
-        pc = await initWebRTC();
-        console.log("PC created:", !!pc);
+  try {
+    determinePoleness();
+    pc = await initWebRTC();
+    console.log("PC created:", !!pc);
 
-        const stream = await getMicStream();
-        if (stream) {
-            stream.getTracks().forEach(track => {
-                pc.addTrack(track, stream);
-            });
-            console.log("Microphone added to peer connection");
-        }
-
-        signaling = setupSignaling(pc, robust);
-        webrtcInitialized = true;
-
-        setupConnectionRecovery();
-        await processQueuedSignalingMessages();
-
-        exposeToGlobal();
-        console.log("WebRTC initialized successfully");
-
-        if (!isPolite) {
-            console.log("Impolite peer - sending initial offer");
-            setTimeout(() => {
-                if (signaling && signaling.sendOffer) signaling.sendOffer();
-            }, 500);
-        } else {
-            console.log("Polite peer - waiting for remote offer");
-        }
-
-    } catch (error) {
-        console.error("Failed to initialize WebRTC:", error);
-        webrtcInitialized = false;
-        exposeToGlobal();
-        setTimeout(() => {
-            window.onRobustOpen(rawSocket);
-        }, 3000);
+    const stream = await getMicStream();
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
+      });
+      console.log("Microphone added to peer connection");
     }
 
-    window.ws = rawSocket;
-    window.updateGlobals?.(); // 🔑 run updateGlobals at the end if defined
+    signaling = setupSignaling(pc, robust);
+    webrtcInitialized = true;
+
+    setupConnectionRecovery();
+    await processQueuedSignalingMessages();
+
+    exposeToGlobal();
+    console.log("WebRTC initialized successfully");
+
+    if (!isPolite) {
+      console.log("Impolite peer - sending initial offer");
+      setTimeout(() => {
+        if (signaling && signaling.sendOffer) signaling.sendOffer();
+      }, 500);
+    } else {
+      console.log("Polite peer - waiting for remote offer");
+
+      // 🔑 Safety net: if no offer comes, force renegotiation
+      setTimeout(() => {
+        if (pc && pc.signalingState === "stable" && webrtcInitialized) {
+          console.warn("⚠️ Polite peer forcing renegotiation (no offer received)");
+          signaling.sendOffer();
+        }
+      }, 3000);
+    }
+
+  } catch (error) {
+    console.error("Failed to initialize WebRTC:", error);
+    webrtcInitialized = false;
+    exposeToGlobal();
+    setTimeout(() => {
+      window.onRobustOpen(rawSocket);
+    }, 3000);
+  }
+
+  window.ws = rawSocket;
+  window.updateGlobals?.(); // 🔑 run updateGlobals at the end if defined
 };
+
+
+
+
 async function initializeWebRTC() {
     // Reset state first
     await resetWebRTCState();
