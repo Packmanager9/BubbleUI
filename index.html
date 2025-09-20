@@ -1903,7 +1903,7 @@ class Node {
             force.y = 0
             for(let w= 0;w<15;w++){
                 
-            if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)+9) {
+            if (this.hash[keys[t]].distance < (this.offset.radius + this.hash[keys[t]].radius)+7) {
 
                 force.x += Math.sign(this.hash[keys[t]].x - (this.body.x + this.offset.x)) / this.hash[keys[t]].distance
                 // force.y += Math.sign(this.hash[keys[t]].y - (this.body.y + this.offset.y)) / this.hash[keys[t]].distance
@@ -1914,7 +1914,7 @@ class Node {
                     // this.offset.y -= force.y / 1
                 } else {
 
-                    this.offset.x -= force.x / 9
+                    this.offset.x -= force.x / 6
                     // this.offset.y -= force.y / 1.6
                 }
             } else {
@@ -1953,11 +1953,11 @@ class Node {
 
 
                         if (this.childos != 1) {
-                            this.offset.x -= force2.x / 12
+                            this.offset.x -= force2.x / 5
                             // this.offset.y -= force2.y / 2
                         } else {
 
-                            this.offset.x -= force2.x / 300
+                            this.offset.x -= force2.x / 122
                             // this.offset.y -= force2.y / 55
                         }
                     }
