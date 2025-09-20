@@ -1204,35 +1204,42 @@ async function mainSetup() {
 
 
 function setupSignaling(pc, ws) {
-  async function sendOffer() {
-    try {
-      makingOffer = true;
-      console.log("Creating offer...");
-      
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: false
-      });
-      
-      // Check if we should still proceed
-      if (pc.signalingState !== "stable") {
-        console.log("Signaling state changed during offer creation, aborting");
-        return;
-      }
-      
-      console.log("Offer SDP:", offer.sdp);
-      const audioCodecs = offer.sdp.match(/a=rtpmap:\d+ (\w+\/\d+)/g);
-      console.log("Available audio codecs:", audioCodecs);
-      
-      await pc.setLocalDescription(offer);
-      ws.send(JSON.stringify({ offer }));
-      console.log("Offer sent successfully");
-    } catch (error) {
-      console.error("Failed to send offer:", error);
-    } finally {
-      makingOffer = false;
-    }
+    async function sendOffer() {
+  // Don’t let the polite peer initiate unless triggered by negotiationneeded
+  if (isPolite) {
+    console.log("Polite peer should not send unsolicited offers, skipping");
+    return;
   }
+
+  try {
+    makingOffer = true;
+    console.log("Creating offer...");
+
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: false
+    });
+
+    // ✅ Perfect negotiation glare check
+    if (pc.signalingState !== "stable") {
+      console.warn("⚠️ Signaling state not stable, rolling back instead of sending offer");
+      await pc.setLocalDescription({ type: "rollback" });
+      return;
+    }
+
+    console.log("Offer SDP:", offer.sdp);
+    const audioCodecs = offer.sdp.match(/a=rtpmap:\d+ (\w+\/\d+)/g);
+    console.log("Available audio codecs:", audioCodecs);
+
+    await pc.setLocalDescription(offer);
+    ws.send(JSON.stringify({ offer }));
+    console.log("Offer sent successfully");
+  } catch (error) {
+    console.error("Failed to send offer:", error);
+  } finally {
+    makingOffer = false;
+  }
+}
 
   async function sendAnswer(remoteOffer) {
     try {
