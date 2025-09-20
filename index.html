@@ -350,73 +350,94 @@ let messageQueue = [];
 let processingMessages = false;
 const MAX_MESSAGES_PER_BATCH = 5;
 const PROCESSING_INTERVAL = 16; // ~60fps
-
-// Quick message handler - just queue the work
-window.onRobustMessage = async (event, rawSocket) => {
-  let msg = null;
-
-  // Handle both string and ArrayBuffer JSON messages
-  if (typeof event.data === "string") {
+window.onRobustOpen = async (rawSocket) => {
+    console.log("WebSocket connected, initializing WebRTC...");
+    
     try {
-      msg = JSON.parse(event.data);
-      console.log("Received JSON string:", Object.keys(msg));
-    } catch {
-      msg = null;
-    }
-  } else if (event.data instanceof ArrayBuffer) {
-    // Try to decode ArrayBuffer as JSON first
-    try {
-      const text = new TextDecoder().decode(event.data);
-      msg = JSON.parse(text);
-      console.log("Received JSON ArrayBuffer:", Object.keys(msg));
-    } catch {
-      // Not JSON, treat as binary data
-      msg = null;
-    }
-  }
-  
-  // Handle WebRTC signaling (now works for both string and ArrayBuffer)
-  if (msg && (msg.offer || msg.answer || msg.candidate)) {
-    console.log("Processing WebRTC signaling:", Object.keys(msg));
-    if (!webrtcInitialized) {
-      console.log("Queueing signaling message until WebRTC is ready");
-      pendingSignalingMessages.push(msg);
-      return;
-    }
-    try {
-      await processSignalingMessage(msg);
+        // Determine politeness first
+        determinePoleness();
+        
+        // Initialize WebRTC first
+        pc = await initWebRTC();
+        console.log("PC created:", !!pc);
+        
+        // THEN add microphone stream
+        const stream = await getMicStream();
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                pc.addTrack(track, stream);
+            });
+            console.log("Microphone added to peer connection");
+        }
+        
+        // Setup signaling
+        signaling = setupSignaling(pc, robust);
+        webrtcInitialized = true;
+        
+        // Setup recovery handlers
+        setupConnectionRecovery();
+        
+        // Process any queued messages
+        await processQueuedSignalingMessages();
+        
+        exposeToGlobal();
+        console.log("WebRTC initialized successfully");
+        
+        // Send offer immediately if impolite, or wait for remote offer if polite
+        if (!isPolite) {
+            console.log("Impolite peer - sending initial offer");
+            setTimeout(() => {
+                if (signaling && signaling.sendOffer) {
+                    signaling.sendOffer();
+                }
+            }, 500); // Short delay to ensure everything is ready
+        } else {
+            console.log("Polite peer - waiting for remote offer");
+        }
+        
     } catch (error) {
-      console.error("WebRTC signaling error:", error);
+        console.error("Failed to initialize WebRTC:", error);
+        webrtcInitialized = false;
+        exposeToGlobal();
+        // Retry after delay
+        setTimeout(() => {
+            window.onRobustOpen(rawSocket);
+        }, 3000);
     }
-    return;
-  }
-
-  // Handle resendList and other JSON messages
-  if (msg && msg.resendList) {
-    console.log("Processing resendList message");
-    // Don't queue resendList messages - they should be processed immediately
-    const workItem = { event, rawSocket, timestamp: Date.now(), data: msg };
-    await processMessage(workItem);
-    return;
-  }
-
-  // Queue everything else for normal processing
-  try {
-    const workItem = {
-      event,
-      rawSocket,
-      timestamp: Date.now(),
-      data: event.data,
-    };
-    messageQueue.push(workItem);
-
-    if (!processingMessages) {
-      scheduleMessageProcessing();
-    }
-  } catch (e) {
-    console.error("Failed to queue message:", e);
-  }
+    
+    window.ws = rawSocket;
 };
+async function initializeWebRTC() {
+    // Reset state first
+    await resetWebRTCState();
+    
+    // Create new peer connection
+    pc = await initWebRTC();
+    console.log("PC created:", !!pc);
+    
+    // Add microphone stream
+    const stream = await getMicStream();
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            pc.addTrack(track, stream);
+        });
+        console.log("Microphone added to peer connection");
+    }
+    
+    // Setup signaling
+    signaling = setupSignaling(pc, robust);
+    webrtcInitialized = true;
+    
+    // Setup recovery handlers
+    setupConnectionRecovery();
+    
+    // Process any queued messages
+    await processQueuedSignalingMessages();
+    
+    exposeToGlobal();
+    console.log("WebRTC initialized successfully");
+}
+
 
 function scheduleMessageProcessing() {
   if (processingMessages) return;
@@ -426,93 +447,85 @@ function scheduleMessageProcessing() {
     processMessageQueue();
   }, { timeout: 50 }); // fallback timeout
 }
-
 async function processSignalingMessage(msg) {
-  if (!pc) {
-    console.error("No peer connection available");
-    return;
-  }
-
-  if (pc.connectionState === 'closed') {
-    console.error("Peer connection is closed");
-    return;
-  }
-
-  try {
-    if (msg.offer) {
-      console.log("Processing offer, current signaling state:", pc.signalingState);
-      
-      // Clear any pending ICE candidates from previous session
-      pendingIceCandidates = [];
-      
-      // Perfect negotiation collision resolution
-      const offerCollision = (msg.offer.type === "offer") && 
-                           (makingOffer || pc.signalingState !== "stable");
-      
-      ignoreOffer = !isPolite && offerCollision;
-      
-      if (ignoreOffer) {
-        console.log("Ignoring offer due to collision (impolite peer)");
+    if (!pc) {
+        console.error("No peer connection available");
         return;
-      }
-      
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-      
-      // Process any queued ICE candidates now that we have remote description
-      while (pendingIceCandidates.length > 0) {
-        const candidate = pendingIceCandidates.shift();
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log("Added queued ICE candidate");
-        } catch (e) {
-          console.warn("Failed to add queued ICE candidate:", e);
-        }
-      }
-      
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      robust.send(JSON.stringify({ answer }));
-      
-    } else if (msg.answer) {
-      console.log("Processing answer, current signaling state:", pc.signalingState);
-      
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
-      
-      // Process any queued ICE candidates
-      while (pendingIceCandidates.length > 0) {
-        const candidate = pendingIceCandidates.shift();
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log("Added queued ICE candidate after answer");
-        } catch (e) {
-          console.warn("Failed to add queued ICE candidate:", e);
-        }
-      }
-      
-    } else if (msg.candidate) {
-      console.log("Processing ICE candidate, signaling state:", pc.signalingState);
-      
-      try {
-        if (pc.remoteDescription && pc.remoteDescription.sdp) {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log("ICE candidate added successfully");
-        } else {
-          console.log("Queueing ICE candidate - no remote description yet");
-          pendingIceCandidates.push(msg.candidate);
-        }
-      } catch (e) {
-        if (!ignoreOffer) {
-          console.warn("Failed to add ICE candidate:", e);
-        }
-      }
     }
-  } catch (error) {
-    console.error("Error processing signaling message:", error);
-  } finally {
-    makingOffer = false;
-  }
-}
 
+    if (pc.connectionState === 'closed') {
+        console.error("Peer connection is closed");
+        return;
+    }
+
+    try {
+        if (msg.offer) {
+            console.log("Processing offer, current signaling state:", pc.signalingState);
+            
+            // Perfect negotiation with better collision handling
+            const offerCollision = (msg.offer.type === "offer") && 
+                                 (makingOffer || pc.signalingState !== "stable");
+            
+            ignoreOffer = !isPolite && offerCollision;
+            
+            if (ignoreOffer) {
+                console.log("Ignoring offer due to collision (impolite peer)");
+                return;
+            }
+            
+            // Set remote description
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+            
+            // Create and send answer
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            robust.send(JSON.stringify({ answer }));
+            
+            console.log("Answer sent successfully");
+            
+        } else if (msg.answer) {
+            console.log("Processing answer");
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+            
+        } else if (msg.candidate) {
+            console.log("Processing ICE candidate");
+            
+            try {
+                if (pc.remoteDescription && pc.remoteDescription.sdp) {
+                    await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+                } else {
+                    console.log("Queueing ICE candidate - no remote description yet");
+                    pendingIceCandidates.push(msg.candidate);
+                }
+            } catch (e) {
+                if (!ignoreOffer) {
+                    console.warn("Failed to add ICE candidate:", e);
+                }
+            }
+        }
+        
+        // Process queued candidates after setting remote description
+        while (pendingIceCandidates.length > 0 && pc.remoteDescription) {
+            const candidate = pendingIceCandidates.shift();
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+                console.warn("Failed to add queued ICE candidate:", e);
+            }
+        }
+        
+    } catch (error) {
+        console.error("Error processing signaling message:", error);
+        
+        // If we get a signaling error, might need to reset
+        if (error.name === 'InvalidStateError') {
+            console.log("Invalid state error - resetting connection");
+            await handleConnectionFailure();
+        }
+    } finally {
+        makingOffer = false;
+    }
+}
 
 async function processQueuedSignalingMessages() {
   console.log(`Processing ${pendingSignalingMessages.length} queued signaling messages`);
@@ -1182,16 +1195,21 @@ function setupSignaling(pc, ws) {
 
   return { sendOffer, sendAnswer };
 }
-
 function determinePoleness() {
-    try {
-        const seed = Date.now() + Math.random();
-        isPolite = (seed % 2) < 1;
-        console.log("This peer is", isPolite ? "polite" : "impolite", "seed:", seed);
-        exposeToGlobal();
-    } catch (e) {
-        console.error("Error in determinePoleness:", e);
+    // Use WebSocket URL or a consistent identifier
+    const urlHash = hashCode(window.location.href);
+    isPolite = urlHash % 2 === 0;
+    console.log("This peer is", isPolite ? "polite" : "impolite", "hash:", urlHash);
+}
+
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
     }
+    return Math.abs(hash);
 }
 
 
@@ -1262,29 +1280,8 @@ function debugWebRTCTracks() {
     }
   });
 }
-function setupConnectionRecovery() {
-  if (pc) {
-    pc.onconnectionstatechange = () => {
-      console.log("WebRTC connection state:", pc.connectionState);
-      
-      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        console.log("Connection failed, attempting to restart...");
-        setTimeout(() => {
-          if (signaling && signaling.sendOffer && !isPolite) {
-            signaling.sendOffer();
-          }
-        }, 2000);
-      }
-    };
 
-    pc.onnegotiationneeded = async () => {
-      console.log("Negotiation needed");
-      if (signaling && signaling.sendOffer && !isPolite) {
-        await signaling.sendOffer();
-      }
-    };
-  }
-}
+
 
 
 function setUp(canvas_pass, style = "#493939") {
@@ -2032,6 +2029,109 @@ function drawNodeD(node) {
     }
 
 }
+
+function setupConnectionRecovery() {
+    if (!pc) return;
+    
+    pc.onconnectionstatechange = async () => {
+        console.log("WebRTC connection state:", pc.connectionState);
+        
+        switch (pc.connectionState) {
+            case 'failed':
+            case 'disconnected':
+                console.log("Connection failed/disconnected, attempting recovery...");
+                await handleConnectionFailure();
+                break;
+            case 'connected':
+                console.log("WebRTC connection established!");
+                break;
+        }
+    };
+
+    pc.oniceconnectionstatechange = async () => {
+        console.log("ICE connection state:", pc.iceConnectionState);
+        
+        if (pc.iceConnectionState === 'failed') {
+            console.log("ICE connection failed, restarting...");
+            await restartIce();
+        }
+    };
+}
+
+async function handleConnectionFailure() {
+    // Wait a bit before trying to recover
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        await resetWebRTCState();
+        await initializeWebRTC();
+        
+        // Impolite peer should send offer after reset
+        if (!isPolite && signaling && signaling.sendOffer) {
+            setTimeout(() => {
+                signaling.sendOffer();
+            }, 1000);
+        }
+    }
+}
+
+async function restartIce() {
+    if (pc && pc.connectionState !== 'closed') {
+        try {
+            await pc.restartIce();
+        } catch (error) {
+            console.error("ICE restart failed:", error);
+            await handleConnectionFailure();
+        }
+    }
+}
+
+async function resetWebRTCState() {
+    console.log("Resetting WebRTC state for reconnection");
+    
+    // Stop existing media streams
+    if (window.getGlobalMicStream) {
+        const existingStream = window.getGlobalMicStream();
+        if (existingStream) {
+            existingStream.getTracks().forEach(track => {
+                track.stop();
+                console.log("Stopped existing mic track");
+            });
+        }
+    }
+    
+    // Clear global mic stream
+    if (window.globalMicStream) {
+        window.globalMicStream = null;
+    }
+    
+    // Clear old connection
+    if (pc) {
+        pc.close();
+        pc = null;
+    }
+    
+    // Reset state variables
+    makingOffer = false;
+    ignoreOffer = false;
+    pendingIceCandidates = [];
+    pendingSignalingMessages = [];
+    webrtcInitialized = false;
+    
+    // Re-determine politeness
+    determinePoleness();
+    
+    // Request fresh microphone access
+    try {
+        globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("Fresh microphone stream acquired");
+    } catch (error) {
+        console.error("Failed to get fresh microphone stream:", error);
+    }
+    
+    exposeToGlobal();
+}
+
 function drawNodeL(node) {
     let lout = []
 
@@ -2056,7 +2156,6 @@ function drawNodeL(node) {
             // links[u].secret.body.y = y2
             node.body.x = x1
             links[u].secret.body.x = x2
-
 
 // reset offsets
 node.offset.x = 0;
@@ -2412,11 +2511,23 @@ function exposeToGlobal() {
         window.robust = typeof robust !== 'undefined' ? robust : null;
         window.globalAudioContext = globalAudioContext || null;
         window.audioContextReady = audioContextReady || false;
+        
+        // These are the missing functions causing the error:
+        window.scheduleMessageProcessing = scheduleMessageProcessing;
+        window.processSignalingMessage = processSignalingMessage;
+        window.messageQueue = messageQueue || [];
+        window.processingMessages = processingMessages || false;
+        window.pendingSignalingMessages = pendingSignalingMessages || [];
+        window.processMessage = processMessage;
+        window.processMessageQueue = processMessageQueue;
+        
     } catch (e) {
         console.warn("Failed to expose globals:", e);
     }
 }
 
+// Call immediately after definition
+exposeToGlobal();
 
 // Create a single empty buffer to reuse
 let emptyBuffer = null;
@@ -2866,17 +2977,21 @@ function childSearch(children, color){
 }
 
 
-
-
 async function getMicStream() {
   try {
+    // Use the fresh stream from resetWebRTCState, or get a new one
+    if (globalMicStream && globalMicStream.active) {
+      return globalMicStream;
+    }
+    
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    globalMicStream = stream;
     return stream;
   } catch (err) {
     console.error("Microphone access denied:", err);
+    return null;
   }
 }
-
 
 function playRemoteStream(stream) {
   const audio = document.createElement("audio");
@@ -2950,6 +3065,13 @@ function testWebRTCAudio() {
 
       document.body.appendChild(audioEl);
 
+      console.log("Audio element state after creation:", {
+        muted: audioEl.muted,
+        volume: audioEl.volume,
+        autoplay: audioEl.autoplay
+      });
+
+      
       try {
         await audioEl.play();
         console.log("Remote audio playing successfully");
@@ -3570,24 +3692,8 @@ async function processMessage(workItem) {
     } else if (data instanceof ArrayBuffer) {
       console.log("Processing ArrayBuffer of size:", data.byteLength);
       
-      // Debug: Let's see what's actually in small ArrayBuffers
-      if (data.byteLength < 100) {
-        console.log("Small ArrayBuffer detected - examining content:");
-        const bytes = new Uint8Array(data);
-        console.log("First 20 bytes:", Array.from(bytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-        
-        // Try to read as string
-        try {
-          const text = new TextDecoder().decode(data);
-          console.log("As text:", text);
-        } catch (e) {
-          console.log("Not readable as text");
-        }
-        
-        // Skip processing small ArrayBuffers for now
-        console.log("Skipping small ArrayBuffer for debugging");
-        return;
-      }
+    //   // Debug: Let's see what's act
+    
       
       // Rest of ArrayBuffer processing for larger messages
       if (data.byteLength < 4) {
@@ -3758,64 +3864,79 @@ setTimeout(() => {
 }, 1000);
 
 // optional: when underlying raw socket opens, attach things that depended on ws.open
-window.onRobustOpen = async (rawSocket) => {
-    console.log("WebSocket connected, initializing WebRTC...");
-    
-    try {
-        // Determine politeness first
-        determinePoleness();
-        
-        // Initialize WebRTC first
-        pc = await initWebRTC();
-        console.log("PC created:", !!pc);
-        
-        // THEN add microphone stream
-        const stream = await getMicStream();
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-        console.log("Microphone added to peer connection");
-        
-        signaling = setupSignaling(pc, robust);
-        webrtcInitialized = true;
-        
-        // Expose updated variables
-        exposeToGlobal();
-        
-        console.log("WebRTC initialized successfully");
-        
-        // Process any messages that arrived while we were initializing
-        await processQueuedSignalingMessages();
-        
-        setupConnectionRecovery();
-        
-        // Connection timeout logic
-        let connectionTimeout = setTimeout(() => {
-            console.log("No offer received, becoming impolite and sending offer");
-            isPolite = false;
-            exposeToGlobal();
-            if (signaling && signaling.sendOffer) {
-                signaling.sendOffer();
-            }
-        }, 5000);
-        
-        // Start the call logic
-        setTimeout(() => {
-            if (signaling && signaling.sendOffer && !isPolite) {
-                console.log("Sending initial offer (impolite peer)");
-                signaling.sendOffer();
-            } else {
-                console.log("Waiting for offer (polite peer)");
-            }
-        }, 1000);
-        
-    } catch (error) {
-        console.error("Failed to initialize WebRTC:", error);
-        webrtcInitialized = false;
-        exposeToGlobal();
-    }
-    
-    window.ws = rawSocket;
-};
+// Quick message handler - just queue the work
+window.onRobustMessage = async (event, rawSocket) => {
+  let msg = null;
 
+    
+  if (msg && msg.resendList) {
+    console.log("Processing resendList message");
+    // Process resendList immediately - don't queue it
+    try {
+        for(let t = 0; t < msg.please.length; t++) {
+            for(let k = 0; k < nodes.length; k++) {
+                if(msg.please[t] == nodes[k].ID) {
+                    nodes[k].sending = 0;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error processing resendList:", e);
+    }
+    return;
+}
+
+  // Handle both string and ArrayBuffer JSON messages
+  if (typeof event.data === "string") {
+    try {
+      msg = JSON.parse(event.data);
+      console.log("Received JSON string:", Object.keys(msg));
+    } catch {
+      msg = null;
+    }
+  } else if (event.data instanceof ArrayBuffer) {
+    // Try to decode ArrayBuffer as JSON first
+    try {
+      const text = new TextDecoder().decode(event.data);
+      msg = JSON.parse(text);
+      console.log("Received JSON ArrayBuffer:", Object.keys(msg));
+    } catch {
+      // Not JSON, treat as binary data
+      msg = null;
+    }
+  }
+  
+  // Handle WebRTC signaling (now works for both string and ArrayBuffer)
+  if (msg && (msg.offer || msg.answer || msg.candidate)) {
+    console.log("Processing WebRTC signaling:", Object.keys(msg));
+    if (!window.webrtcInitialized) {
+      console.log("Queueing signaling message until WebRTC is ready");
+      if (!window.pendingSignalingMessages) window.pendingSignalingMessages = [];
+      window.pendingSignalingMessages.push(msg);
+      return;
+    }
+    try {
+      await window.processSignalingMessage(msg);
+    } catch (error) {
+      console.error("WebRTC signaling error:", error);
+    }
+    return;
+  }
+
+  // Queue other messages for normal processing
+  if (!window.messageQueue) window.messageQueue = [];
+  const workItem = {
+    event,
+    rawSocket,
+    timestamp: Date.now(),
+    data: event.data,
+  };
+  window.messageQueue.push(workItem);
+
+  if (!window.processingMessages) {
+    window.scheduleMessageProcessing();
+  }
+};
 
 
 
