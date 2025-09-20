@@ -14,7 +14,112 @@
     <!-- <script src="force.js"></script> -->
 
 
-
+<!-- Add this script tag anywhere in your HTML after the main module script -->
+<script>
+    // Global debug functions - accessible from console
+    window.debugWebRTCConnections = function() {
+      console.log("=== WebRTC Debug ===");
+      console.log("PC exists:", !!pc);
+      console.log("Connection state:", pc?.connectionState);
+      console.log("ICE state:", pc?.iceConnectionState);
+      console.log("Signaling state:", pc?.signalingState);
+      console.log("Is polite:", isPolite);
+      console.log("Making offer:", makingOffer);
+      console.log("Ignore offer:", ignoreOffer);
+      console.log("WebRTC initialized:", webrtcInitialized);
+      console.log("Local senders:", pc?.getSenders()?.length || 0);
+      console.log("Remote receivers:", pc?.getReceivers()?.length || 0);
+      
+      // Check local audio tracks
+      console.log("--- LOCAL TRACKS ---");
+      pc?.getSenders()?.forEach((sender, i) => {
+        if (sender.track && sender.track.kind === 'audio') {
+          console.log(`Local audio ${i}:`, {
+            enabled: sender.track.enabled,
+            muted: sender.track.muted,
+            readyState: sender.track.readyState,
+            id: sender.track.id
+          });
+        }
+      });
+      
+      // Check remote audio tracks
+      console.log("--- REMOTE TRACKS ---");
+      pc?.getReceivers()?.forEach((receiver, i) => {
+        if (receiver.track && receiver.track.kind === 'audio') {
+          console.log(`Remote audio ${i}:`, {
+            enabled: receiver.track.enabled,
+            muted: receiver.track.muted,
+            readyState: receiver.track.readyState,
+            id: receiver.track.id
+          });
+        }
+      });
+      
+      // Check audio elements on page
+      const audioElements = document.querySelectorAll('audio');
+      console.log("--- AUDIO ELEMENTS ---");
+      console.log("Audio elements on page:", audioElements.length);
+      audioElements.forEach((audio, i) => {
+        console.log(`Audio element ${i}:`, {
+          src: audio.src,
+          muted: audio.muted,
+          volume: audio.volume,
+          paused: audio.paused,
+          autoplay: audio.autoplay
+        });
+      });
+    };
+    
+    window.forceOffer = function() {
+      console.log("Forcing offer send...");
+      if (signaling && signaling.sendOffer) {
+        signaling.sendOffer();
+      } else {
+        console.log("No signaling object available");
+      }
+    };
+    
+    window.togglePoliteness = function() {
+      isPolite = !isPolite;
+      console.log("Toggled politeness, now:", isPolite ? "polite" : "impolite");
+    };
+    
+    window.checkAudioContext = function() {
+      console.log("=== AUDIO CONTEXT DEBUG ===");
+      console.log("Global audio context exists:", !!globalAudioContext);
+      console.log("Audio context state:", globalAudioContext?.state);
+      console.log("Audio context ready:", audioContextReady);
+      console.log("Sample rate:", globalAudioContext?.sampleRate);
+    };
+    
+    window.testMicAccess = function() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          console.log("Microphone test successful");
+          console.log("Tracks:", stream.getTracks().map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState
+          })));
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(err => {
+          console.error("Microphone test failed:", err);
+        });
+    };
+    
+    // Auto-run basic debug on page load
+    setTimeout(() => {
+      console.log("WebRTC Debug functions loaded. Available commands:");
+      console.log("- debugWebRTCConnections()");
+      console.log("- forceOffer()"); 
+      console.log("- togglePoliteness()");
+      console.log("- checkAudioContext()");
+      console.log("- testMicAccess()");
+    }, 2000);
+    </script>
 <!-- Add this script tag in your <head> section, before your main script -->
     <script>
         // Request microphone access immediately on page load
@@ -59,18 +164,23 @@
 
     <script type="module">
 
+
 let pc = null;
 let signaling = {};
 let webrtcInitialized = false;
 let pendingSignalingMessages = [];
+let pendingIceCandidates = [];
+
+// Politeness variables
 let isPolite = false;
 let makingOffer = false;
 let ignoreOffer = false;
 
+// AudioContext variables - MUST be here at top level
+let globalAudioContext = null;
+let audioContextReady = false;
 
 
-
-let globalAudioContext = null; // Reuse audio context 
 let links = []
 let hoverTarget = null;
 let lock = 0
@@ -316,7 +426,6 @@ function scheduleMessageProcessing() {
     processMessageQueue();
   }, { timeout: 50 }); // fallback timeout
 }
-let pendingIceCandidates = []; // Add this global variable
 
 async function processSignalingMessage(msg) {
   if (!pc) {
@@ -1075,11 +1184,15 @@ function setupSignaling(pc, ws) {
 }
 
 function determinePoleness() {
-  // Simple approach: use connection timestamp or random
-  isPolite = Date.now() % 2 === 0;
-  console.log("This peer is", isPolite ? "polite" : "impolite");
+    try {
+        const seed = Date.now() + Math.random();
+        isPolite = (seed % 2) < 1;
+        console.log("This peer is", isPolite ? "polite" : "impolite", "seed:", seed);
+        exposeToGlobal();
+    } catch (e) {
+        console.error("Error in determinePoleness:", e);
+    }
 }
-
 
 
 async function testMicrophone() {
@@ -2256,6 +2369,7 @@ function initAudioContext() {
   if (!globalAudioContext) {
     try {
       globalAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log("AudioContext created, state:", globalAudioContext.state);
     } catch (e) {
       console.warn("Failed to create AudioContext:", e);
       globalAudioContext = null;
@@ -2263,6 +2377,46 @@ function initAudioContext() {
   }
   return globalAudioContext;
 }
+
+
+async function resumeAudioContext() {
+  const ctx = initAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+      audioContextReady = true;
+      console.log("AudioContext resumed successfully");
+    } catch (e) {
+      console.warn("Failed to resume AudioContext:", e);
+      audioContextReady = false;
+    }
+  } else if (ctx && ctx.state === 'running') {
+    audioContextReady = true;
+    console.log("AudioContext already running");
+  }
+  exposeToGlobal();
+}
+
+document.addEventListener('pointerdown', resumeAudioContext, { once: true });
+document.addEventListener('keydown', resumeAudioContext, { once: true });
+
+function exposeToGlobal() {
+    try {
+        window.pc = pc || null;
+        window.signaling = signaling || {};
+        window.webrtcInitialized = webrtcInitialized || false;
+        window.isPolite = isPolite || false;
+        window.makingOffer = makingOffer || false;
+        window.ignoreOffer = ignoreOffer || false;
+        window.pendingIceCandidates = pendingIceCandidates || [];
+        window.robust = typeof robust !== 'undefined' ? robust : null;
+        window.globalAudioContext = globalAudioContext || null;
+        window.audioContextReady = audioContextReady || false;
+    } catch (e) {
+        console.warn("Failed to expose globals:", e);
+    }
+}
+
 
 // Create a single empty buffer to reuse
 let emptyBuffer = null;
@@ -2773,40 +2927,34 @@ function testWebRTCAudio() {
   }
 }
   // Play remote audio
-  
   pcInstance.ontrack = async (event) => {
-  console.log("REMOTE USER CONNECTED - Receiving their audio");
-  if (event.track.kind === 'audio') {
-    console.log("Remote audio track received:", {
-      enabled: event.track.enabled,
-      muted: event.track.muted,
-      readyState: event.track.readyState
-    });
+    console.log("REMOTE USER CONNECTED - Receiving their audio");
+    if (event.track.kind === 'audio') {
+      console.log("Remote audio track received:", {
+        enabled: event.track.enabled,
+        muted: event.track.muted,
+        readyState: event.track.readyState
+      });
 
-    // Create audio element for remote stream
-    const audioEl = document.createElement("audio");
-    audioEl.srcObject = event.streams[0];
-    audioEl.autoplay = true;
-    audioEl.volume = 1.0;
-    audioEl.controls = true; // Enable controls temporarily for debugging
-    audioEl.muted = false; // Force unmute the element
-    audioEl.style.position = 'fixed';
-    audioEl.style.top = '10px';
-    audioEl.style.left = '10px';
-    audioEl.style.zIndex = '9999';
+      // Create audio element for remote stream
+      const audioEl = document.createElement("audio");
+      audioEl.srcObject = event.streams[0];
+      audioEl.autoplay = true;
+      audioEl.volume = 1.0;
+      audioEl.controls = true;
+      audioEl.muted = false;
+      audioEl.style.position = 'fixed';
+      audioEl.style.top = '10px';
+      audioEl.style.left = '10px';
+      audioEl.style.zIndex = '9999';
 
-    document.body.appendChild(audioEl);
+      document.body.appendChild(audioEl);
 
-    // Multiple attempts to play
-    const playAudio = async () => {
       try {
         await audioEl.play();
         console.log("Remote audio playing successfully");
       } catch (e) {
         console.error("Failed to play remote audio:", e);
-        console.log("Click anywhere to enable audio playback");
-        
-        // Add click listener to start audio on user interaction
         document.addEventListener('click', async () => {
           try {
             await audioEl.play();
@@ -2816,13 +2964,8 @@ function testWebRTCAudio() {
           }
         }, { once: true });
       }
-    };
-
-    await playAudio();
-    console.log("Remote audio setup complete");
-  }
-};
-
+    }
+  };
 
   // Handle ICE candidates
   pcInstance.onicecandidate = (event) => {
@@ -3604,51 +3747,119 @@ function trimSeenIds() {
 
 
 
-
-
+const originalProcessSignaling = processSignalingMessage;
+processSignalingMessage = async function(msg) {
+    await originalProcessSignaling(msg);
+    exposeToGlobal();
+};
+setTimeout(() => {
+    exposeToGlobal();
+    console.log("Variables exposed to global scope");
+}, 1000);
 
 // optional: when underlying raw socket opens, attach things that depended on ws.open
 window.onRobustOpen = async (rawSocket) => {
-  console.log("WebSocket connected, initializing WebRTC...");
-  
-  try {
-    // Determine politeness first
-    determinePoleness();
+    console.log("WebSocket connected, initializing WebRTC...");
     
-    // Initialize WebRTC first
-    pc = await initWebRTC();
+    try {
+        // Determine politeness first
+        determinePoleness();
+        
+        // Initialize WebRTC first
+        pc = await initWebRTC();
+        console.log("PC created:", !!pc);
+        
+        // THEN add microphone stream
+        const stream = await getMicStream();
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        console.log("Microphone added to peer connection");
+        
+        signaling = setupSignaling(pc, robust);
+        webrtcInitialized = true;
+        
+        // Expose updated variables
+        exposeToGlobal();
+        
+        console.log("WebRTC initialized successfully");
+        
+        // Process any messages that arrived while we were initializing
+        await processQueuedSignalingMessages();
+        
+        setupConnectionRecovery();
+        
+        // Connection timeout logic
+        let connectionTimeout = setTimeout(() => {
+            console.log("No offer received, becoming impolite and sending offer");
+            isPolite = false;
+            exposeToGlobal();
+            if (signaling && signaling.sendOffer) {
+                signaling.sendOffer();
+            }
+        }, 5000);
+        
+        // Start the call logic
+        setTimeout(() => {
+            if (signaling && signaling.sendOffer && !isPolite) {
+                console.log("Sending initial offer (impolite peer)");
+                signaling.sendOffer();
+            } else {
+                console.log("Waiting for offer (polite peer)");
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error("Failed to initialize WebRTC:", error);
+        webrtcInitialized = false;
+        exposeToGlobal();
+    }
     
-    // THEN add microphone stream
-    const stream = await getMicStream();
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    console.log("Microphone added to peer connection");
-    
-    signaling = setupSignaling(pc, robust);
-    webrtcInitialized = true;
-    
-    console.log("WebRTC initialized successfully");
-    
-    // Process any messages that arrived while we were initializing
-    await processQueuedSignalingMessages();
-    
-    setupConnectionRecovery();
-    
-    // Start the call after everything is ready - only if impolite peer
-    setTimeout(() => {
-      if (signaling && signaling.sendOffer && !isPolite) {
-        console.log("Sending initial offer (impolite peer)");
-        signaling.sendOffer();
-      } else {
-        console.log("Waiting for offer (polite peer)");
-      }
-    }, 1000);
-    
-  } catch (error) {
-    console.error("Failed to initialize WebRTC:", error);
-    webrtcInitialized = false;
-  }
-  
-  window.ws = rawSocket;
+    window.ws = rawSocket;
+};
+
+
+
+
+// Add this at the end of your module script (inside <script type="module">)
+// This exposes your module variables to the global scope for debugging
+
+// Expose WebRTC variables
+window.pc = pc;
+window.signaling = signaling;
+window.webrtcInitialized = webrtcInitialized;
+window.isPolite = isPolite;
+window.makingOffer = makingOffer;
+window.ignoreOffer = ignoreOffer;
+window.pendingIceCandidates = pendingIceCandidates;
+window.robust = robust;
+
+// Expose audio variables  
+window.globalAudioContext = globalAudioContext;
+window.audioContextReady = audioContextReady;
+
+// Update these whenever they change
+window.updateGlobals = function() {
+    window.pc = pc;
+    window.signaling = signaling;
+    window.webrtcInitialized = webrtcInitialized;
+    window.isPolite = isPolite;
+    window.makingOffer = makingOffer;
+    window.ignoreOffer = ignoreOffer;
+    window.globalAudioContext = globalAudioContext;
+    window.audioContextReady = audioContextReady;
+};
+
+// Call updateGlobals whenever WebRTC state changes
+const originalOnRobustOpen = window.onRobustOpen;
+window.onRobustOpen = async function(rawSocket) {
+    await originalOnRobustOpen(rawSocket);
+    window.updateGlobals();
+};
+
+// Also update after signaling
+const originalProcessSignalingMessage = processSignalingMessage;
+window.processSignalingMessage = async function(msg) {
+    await originalProcessSignalingMessage(msg);
+    window.updateGlobals();
 };
     </script>
 </html>
